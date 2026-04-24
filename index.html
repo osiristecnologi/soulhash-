@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SoulHash MVP</title>
+</head>
+<body>
+
+<h1>SoulHash</h1>
+
+<button onclick="connectWallet()">Connect Wallet</button>
+
+<p id="wallet"></p>
+<p id="soulhash"></p>
+
+<h2>Phase 1: The Awakening</h2>
+
+<button onclick="choose('light')">Follow the Light</button>
+<button onclick="choose('shadow')">Embrace Darkness</button>
+<button onclick="choose('balance')">Stay Neutral</button>
+
+<script>
+let userWallet = "";
+
+async function connectWallet() {
+  const provider = window.solana;
+
+  const res = await provider.connect();
+  userWallet = res.publicKey.toString();
+
+  document.getElementById("wallet").innerText = userWallet;
+
+  const response = await fetch("http://localhost:3000/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ wallet: userWallet })
+  });
+
+  const data = await response.json();
+
+  document.getElementById("soulhash").innerText = "SoulHash: " + data.soulhash;
+}
+
+async function choose(type) {
+  const response = await fetch("http://localhost:3000/choice", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ wallet: userWallet, choice: type })
+  });
+
+  const data = await response.json();
+
+  alert("Updated:\nLight: " + data.luz +
+        "\nShadow: " + data.sombra +
+        "\nBalance: " + data.equilibrio);
+}
+</script>
+
+</body>
+</html>
