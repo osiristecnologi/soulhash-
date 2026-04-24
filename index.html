@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SoulHash MVP</title>
+  <title>SoulHash</title>
 </head>
-<body>
+<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
 
 <h1>SoulHash</h1>
 
@@ -22,26 +22,42 @@
 let userWallet = "";
 
 async function connectWallet() {
-  const provider = window.solana;
+  try {
+    const provider = window.solana;
 
-  const res = await provider.connect();
-  userWallet = res.publicKey.toString();
+    if (!provider) {
+      alert("Install Phantom Wallet");
+      return;
+    }
 
-  document.getElementById("wallet").innerText = userWallet;
+    const res = await provider.connect();
+    userWallet = res.publicKey.toString();
 
-  const response = await fetch("http://localhost:3000/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ wallet: userWallet })
-  });
+    document.getElementById("wallet").innerText = "Wallet: " + userWallet;
 
-  const data = await response.json();
+    const response = await fetch("https://soulhash-api.onrender.com/login", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ wallet: userWallet })
+    });
 
-  document.getElementById("soulhash").innerText = "SoulHash: " + data.soulhash;
+    const data = await response.json();
+
+    document.getElementById("soulhash").innerText = "SoulHash: " + data.soulhash;
+
+  } catch (err) {
+    console.error(err);
+    alert("Error connecting wallet");
+  }
 }
 
 async function choose(type) {
-  const response = await fetch("http://localhost:3000/choice", {
+  if (!userWallet) {
+    alert("Connect wallet first");
+    return;
+  }
+
+  const response = await fetch("https://soulhash-api.onrender.com/choice", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ wallet: userWallet, choice: type })
@@ -49,9 +65,11 @@ async function choose(type) {
 
   const data = await response.json();
 
-  alert("Updated:\nLight: " + data.luz +
-        "\nShadow: " + data.sombra +
-        "\nBalance: " + data.equilibrio);
+  alert(
+    "Updated:\nLight: " + data.luz +
+    "\nShadow: " + data.sombra +
+    "\nBalance: " + data.equilibrio
+  );
 }
 </script>
 
