@@ -19,28 +19,25 @@
 <button onclick="choose('shadow')">Embrace Darkness</button>
 <button onclick="choose('balance')">Stay Neutral</button>
 
+<br><br>
+
+<!-- 🔗 Abrir direto na Phantom -->
+<a href="https://phantom.app/ul/browse/https://osiristecnologi.github.io" style="color:cyan;">
+  Open in Phantom
+</a>
+
 <script>
 let userWallet = "";
 
-// 🔥 FUNÇÃO FINAL (FUNCIONA PHANTOM + SOLFLARE)
+// 🔥 CONECTAR (SÓ PHANTOM)
 async function connectWallet() {
   try {
-    let provider = null;
-
-    // Solana provider (Phantom OU Solflare)
-    if (window.solana) {
-      provider = window.solana;
-      console.log("Wallet detected");
-    }
-
-    if (!provider) {
-      alert("Open this site inside Phantom or Solflare wallet");
+    if (!window.solana || !window.solana.isPhantom) {
+      alert("Open this site inside Phantom Wallet");
       return;
     }
 
-    // Conectar (força popup)
-    const res = await provider.connect({ onlyIfTrusted: false });
-
+    const res = await window.solana.connect();
     userWallet = res.publicKey.toString();
 
     document.getElementById("wallet").innerText = "Wallet: " + userWallet;
@@ -57,7 +54,7 @@ async function connectWallet() {
 
   } catch (err) {
     console.error(err);
-    alert("Wallet connection failed");
+    alert("Connection failed");
   }
 }
 
