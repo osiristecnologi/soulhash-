@@ -1,44 +1,35 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>SoulHash</title>
-</head>
-<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
-
-<h1>SoulHash</h1>
-
-<button onclick="connectWallet()">Connect Wallet</button>
-
-<p id="wallet"></p>
-<p id="soulhash"></p>
-
-<h2>Phase 1: The Awakening</h2>
-
-<button onclick="choose('light')">Follow the Light</button>
-<button onclick="choose('shadow')">Embrace Darkness</button>
-<button onclick="choose('balance')">Stay Neutral</button>
-
-<script>
-let userWallet = "";
-
 async function connectWallet() {
   try {
-    const provider = window.solana;
+    let provider;
 
-    if (!provider) {
-      alert("Install Phantom Wallet");
+    // Detect Phantom
+    if (window.solana && window.solana.isPhantom) {
+      provider = window.solana;
+      console.log("Phantom detected");
+    }
+    // Detect Solflare
+    else if (window.solflare && window.solflare.isSolflare) {
+      provider = window.solflare;
+      console.log("Solflare detected");
+    }
+    else {
+      alert("No wallet found. Please open in Phantom or Solflare browser.");
       return;
     }
 
+    // Conectar wallet
     const res = await provider.connect();
-    userWallet = res.publicKey.toString();
+    const publicKey = res.publicKey.toString();
 
-    document.getElementById("wallet").innerText = "Wallet: " + userWallet;
+    userWallet = publicKey;
 
+    document.getElementById("wallet").innerText = "Wallet: " + publicKey;
+
+    // Enviar pro backend
     const response = await fetch("https://soulhash-api.onrender.com/login", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ wallet: userWallet })
+      body: JSON.stringify({ wallet: publicKey })
     });
 
     const data = await response.json();
@@ -50,28 +41,3 @@ async function connectWallet() {
     alert("Error connecting wallet");
   }
 }
-
-async function choose(type) {
-  if (!userWallet) {
-    alert("Connect wallet first");
-    return;
-  }
-
-  const response = await fetch("https://soulhash-api.onrender.com/choice", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ wallet: userWallet, choice: type })
-  });
-
-  const data = await response.json();
-
-  alert(
-    "Updated:\nLight: " + data.luz +
-    "\nShadow: " + data.sombra +
-    "\nBalance: " + data.equilibrio
-  );
-}
-</script>
-
-</body>
-</html>
