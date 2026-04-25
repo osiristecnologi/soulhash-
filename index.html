@@ -12,7 +12,7 @@
 <button onclick="connectWallet()" style="padding:12px 28px; font-size:16px; margin:10px;">Connect Wallet</button>
 
 <p id="wallet" style="margin:10px 0; word-break:break-all; color:#ccc; font-size:14px;"></p>
-<p id="balance" style="margin:5px 0; color:#00ff9d; font-weight:bold; font-size:18px;"></p>
+<p id="balance" style="margin:5px 0; color:#00ff9d; font-weight:bold; font-size:18px;">Saldo: --- SOL</p>
 <p id="soulhash" style="margin:10px 0; color:#ffd700; font-weight:bold;"></p>
 
 <h2>Phase 1: The Awakening</h2>
@@ -43,12 +43,15 @@
 
 <br><br>
 
-<!-- Botão para abrir Swap no Phantom -->
+<button onclick="updateBalance()" style="padding:10px 20px; background:#333; color:white; border:none; border-radius:8px; margin:10px;">
+  Atualizar Saldo
+</button>
+
 <button onclick="openPhantomSwap()" style="padding:12px 24px; background:#9945ff; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer; margin:10px;">
   🌀 Abrir Swap no Phantom
 </button>
 
-<br>
+<br><br>
 <a href="https://phantom.app/ul/browse/https://osiristecnologi.github.io" style="color:cyan; text-decoration:underline;">
   Abrir site direto na Phantom
 </a>
@@ -58,11 +61,11 @@ let userWallet = "";
 const RECIPIENT_WALLET = "AbrrjK6s9ScxZzVGYw34MvvjK39utg558j7WFwtP4rcm";
 let connection = null;
 
-// Conectar Wallet + mostrar saldo
+// Conectar Wallet
 async function connectWallet() {
   try {
     if (!window.solana || !window.solana.isPhantom) {
-      alert("Abra este site dentro da Phantom Wallet");
+      alert("Abra este site dentro da Phantom Wallet (app ou extensão)");
       return;
     }
 
@@ -71,10 +74,9 @@ async function connectWallet() {
 
     document.getElementById("wallet").innerHTML = `<strong>Wallet:</strong><br>${userWallet}`;
 
-    // Configura conexão
     connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-    // Busca e mostra saldo
+    // Tenta carregar saldo uma vez
     await updateBalance();
 
     // Login no backend
@@ -85,63 +87,60 @@ async function connectWallet() {
     });
 
     const data = await response.json();
-    document.getElementById("soulhash").innerText = "SoulHash: " + (data.soulhash || "Recebido");
+    document.getElementById("soulhash").innerText = "SoulHash: " + (data.soulhash || "OK");
 
   } catch (err) {
     console.error(err);
-    alert("Falha ao conectar. Tente novamente.");
+    alert("Falha ao conectar. Tente novamente dentro da Phantom.");
   }
 }
 
-// Atualiza saldo da wallet
+// Atualizar saldo (botão separado)
 async function updateBalance() {
-  if (!connection || !userWallet) return;
+  const balanceEl = document.getElementById("balance");
+  if (!connection || !userWallet) {
+    balanceEl.innerText = "Saldo: Conecte a wallet primeiro";
+    return;
+  }
+
   try {
+    balanceEl.innerText = "Carregando saldo...";
     const pubkey = new solanaWeb3.PublicKey(userWallet);
     const balanceLamports = await connection.getBalance(pubkey);
     const balanceSOL = (balanceLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4);
-    document.getElementById("balance").innerText = `Saldo: ${balanceSOL} SOL`;
+    balanceEl.innerText = `Saldo: ${balanceSOL} SOL`;
   } catch (e) {
-    document.getElementById("balance").innerText = "Saldo: Erro ao carregar";
+    console.error(e);
+    balanceEl.innerText = "Saldo: Erro ao carregar (tente novamente)";
   }
 }
 
-// Escolhas (mantido)
+// Escolhas
 async function choose(type) {
-  if (!userWallet) {
-    alert("Conecte sua wallet primeiro!");
-    return;
-  }
+  if (!userWallet) return alert("Conecte sua wallet primeiro!");
   try {
-    const response = await fetch("https://soulhash-api.onrender.com/choice", {
+    const res = await fetch("https://soulhash-api.onrender.com/choice", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ wallet: userWallet, choice: type })
     });
-    const data = await response.json();
+    const data = await res.json();
     alert(`Atualizado:\nLight: ${data.luz || 0}\nShadow: ${data.sombra || 0}\nBalance: ${data.equilibrio || 0}`);
   } catch (e) {
     alert("Erro ao registrar escolha.");
   }
 }
 
-// Pagamento de Taxa
+// Pagamento (mantido igual ao anterior)
 async function payTax(amountSOL) {
-  if (!userWallet) {
-    alert("Conecte sua wallet primeiro!");
-    return;
-  }
-  if (!connection) {
-    alert("Conexão não inicializada. Conecte novamente.");
-    return;
-  }
+  if (!userWallet) return alert("Conecte sua wallet primeiro!");
 
   const confirmPay = confirm(`Confirmar pagamento de ${amountSOL} SOL?`);
   if (!confirmPay) return;
 
   const btnId = `btn${amountSOL === 0.06 ? 1 : amountSOL === 0.15 ? 2 : 3}`;
   const btn = document.getElementById(btnId);
-  const originalText = btn.innerHTML;
+  const original = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = "Enviando...";
 
@@ -149,46 +148,41 @@ async function payTax(amountSOL) {
     const fromPubkey = new solanaWeb3.PublicKey(userWallet);
     const toPubkey = new solanaWeb3.PublicKey(RECIPIENT_WALLET);
 
-    const transaction = new solanaWeb3.Transaction().add(
+    const tx = new solanaWeb3.Transaction().add(
       solanaWeb3.SystemProgram.transfer({
-        fromPubkey: fromPubkey,
-        toPubkey: toPubkey,
-        lamports: Math.round(amountSOL * solanaWeb3.LAMPORTS_PER_SOL),
+        fromPubkey,
+        toPubkey,
+        lamports: Math.round(amountSOL * solanaWeb3.LAMPORTS_PER_SOL)
       })
     );
 
-    const { signature } = await window.solana.signAndSendTransaction(transaction);
+    const { signature } = await window.solana.signAndSendTransaction(tx);
     await connection.confirmTransaction(signature, "confirmed");
 
-    alert(`✅ Pagamento de ${amountSOL} SOL enviado com sucesso!\n\nTx: ${signature.slice(0, 20)}...`);
+    alert(`✅ ${amountSOL} SOL enviado com sucesso!`);
+    await updateBalance(); // atualiza saldo após pagamento
 
-    // Atualiza saldo após pagamento
-    await updateBalance();
-
-    // Envia para backend
     await fetch("https://soulhash-api.onrender.com/pay", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ wallet: userWallet, amount: amountSOL, signature })
     });
-
   } catch (err) {
-    console.error(err);
-    alert("Transação cancelada ou falhou: " + (err.message || err));
+    alert("Transação falhou ou cancelada: " + err.message);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = originalText;
+    btn.innerHTML = original;
   }
 }
 
-// Abrir Swap diretamente no Phantom
+// Deeplink corrigido para Swap no Phantom
 function openPhantomSwap() {
   if (!userWallet) {
     alert("Conecte sua wallet primeiro!");
     return;
   }
-  // Deeplink para swap (compra SOL por padrão)
-  window.location.href = `https://phantom.app/ul/v1/swap?buy=solana:So11111111111111111111111111111111111111112`;
+  // Deeplink oficial para abrir o swapper da Phantom (compra/vende SOL por padrão)
+  window.location.href = "https://phantom.app/ul/v1/swap";
 }
 </script>
 
