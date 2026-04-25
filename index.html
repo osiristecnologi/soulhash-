@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>SoulHash</title>
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/dist/index.iife.min.js"></script>
 </head>
 
 <body style="background:black;color:white;text-align:center;font-family:sans-serif;">
@@ -21,19 +22,40 @@
 
 <br><br>
 
-<!-- 🔗 Abrir direto na Phantom -->
+<!-- 🔗 Nova Seção de Pagamento -->
+<h2>Pague para Evoluir sua Alma</h2>
+<p style="color:#aaa; font-size:14px;">Escolha uma taxa para fortalecer sua jornada</p>
+
+<div style="margin:20px auto; display:flex; flex-direction:column; gap:12px; max-width:400px;">
+  <button onclick="payTax(0.06)" style="padding:15px; background:#1a1a2e; border:1px solid #ffd700; color:#ffd700; border-radius:8px; font-size:16px; cursor:pointer;">
+    Taxa 1 — 0.06 SOL
+  </button>
+  
+  <button onclick="payTax(0.15)" style="padding:15px; background:#1a1a2e; border:1px solid #ffd700; color:#ffd700; border-radius:8px; font-size:16px; cursor:pointer;">
+    Taxa 2 — 0.15 SOL
+  </button>
+  
+  <button onclick="payTax(0.50)" style="padding:15px; background:#1a1a2e; border:1px solid #ffd700; color:#ffd700; border-radius:8px; font-size:16px; cursor:pointer;">
+    Taxa 3 — 0.50 SOL (Premium)
+  </button>
+</div>
+
+<br>
+
+<!-- Link Phantom -->
 <a href="https://phantom.app/ul/browse/https://osiristecnologi.github.io" style="color:cyan;">
   Open in Phantom
 </a>
 
 <script>
 let userWallet = "";
+const RECIPIENT_WALLET = "SUA_CARTEIRA_AQUI"; // ←←← MUDE PARA O SEU ENDEREÇO SOLANA
 
-// 🔥 CONECTAR (SÓ PHANTOM)
+// 🔥 CONECTAR WALLET (Phantom)
 async function connectWallet() {
   try {
     if (!window.solana || !window.solana.isPhantom) {
-      alert("Open this site inside Phantom Wallet");
+      alert("Abra este site dentro da Phantom Wallet");
       return;
     }
 
@@ -49,19 +71,18 @@ async function connectWallet() {
     });
 
     const data = await response.json();
-
     document.getElementById("soulhash").innerText = "SoulHash: " + data.soulhash;
 
   } catch (err) {
     console.error(err);
-    alert("Connection failed");
+    alert("Falha na conexão");
   }
 }
 
-// 🎮 ESCOLHAS
+// 🎮 ESCOLHAS (mantido igual)
 async function choose(type) {
   if (!userWallet) {
-    alert("Connect wallet first");
+    alert("Conecte a wallet primeiro");
     return;
   }
 
@@ -72,12 +93,66 @@ async function choose(type) {
   });
 
   const data = await response.json();
+  alert(`Atualizado:\nLight: ${data.luz}\nShadow: ${data.sombra}\nBalance: ${data.equilibrio}`);
+}
 
-  alert(
-    "Updated:\nLight: " + data.luz +
-    "\nShadow: " + data.sombra +
-    "\nBalance: " + data.equilibrio
-  );
+// 💰 PAGAMENTO DE TAXA
+async function payTax(amountSOL) {
+  if (!userWallet) {
+    alert("Conecte sua wallet primeiro!");
+    return;
+  }
+
+  if (!window.solana || !window.solana.isPhantom) {
+    alert("Phantom Wallet não detectada");
+    return;
+  }
+
+  const confirmPay = confirm(`Confirmar pagamento de ${amountSOL} SOL?\n\nEsta taxa irá fortalecer sua alma no SoulHash.`);
+  if (!confirmPay) return;
+
+  try {
+    const connection = new solanaWeb3.Connection(
+      "https://api.mainnet-beta.solana.com", 
+      "confirmed"
+    );
+
+    const fromPubkey = new solanaWeb3.PublicKey(userWallet);
+    const toPubkey = new solanaWeb3.PublicKey(RECIPIENT_WALLET);
+
+    const lamports = Math.round(amountSOL * solanaWeb3.LAMPORTS_PER_SOL);
+
+    const transaction = new solanaWeb3.Transaction().add(
+      solanaWeb3.SystemProgram.transfer({
+        fromPubkey: fromPubkey,
+        toPubkey: toPubkey,
+        lamports: lamports,
+      })
+    );
+
+    // Solicita assinatura e envio pela Phantom
+    const { signature } = await window.solana.signAndSendTransaction(transaction);
+
+    // Aguarda confirmação
+    await connection.confirmTransaction(signature, "confirmed");
+
+    alert(`Pagamento de ${amountSOL} SOL realizado com sucesso!\n\nTransação: ${signature}`);
+
+    // Envia informação para o seu backend
+    await fetch("https://soulhash-api.onrender.com/pay", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ 
+        wallet: userWallet, 
+        amount: amountSOL,
+        signature: signature 
+      })
+    });
+
+  } catch (err) {
+    console.error(err);
+    alert("Pagamento cancelado ou falhou: " + err.message);
+  }
 }
 </script>
 
