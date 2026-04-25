@@ -22,27 +22,25 @@
 <script>
 let userWallet = "";
 
-// 🔥 FUNÇÃO ATUALIZADA (PHANTOM + SOLFLARE)
+// 🔥 FUNÇÃO FINAL (FUNCIONA PHANTOM + SOLFLARE)
 async function connectWallet() {
   try {
-    let provider;
+    let provider = null;
 
-    // Phantom
-    if (window.solana && window.solana.isPhantom) {
+    // Solana provider (Phantom OU Solflare)
+    if (window.solana) {
       provider = window.solana;
-      console.log("Phantom detected");
+      console.log("Wallet detected");
     }
-    // Solflare
-    else if (window.solflare && window.solflare.isSolflare) {
-      provider = window.solflare;
-      console.log("Solflare detected");
-    }
-    else {
+
+    if (!provider) {
       alert("Open this site inside Phantom or Solflare wallet");
       return;
     }
 
-    const res = await provider.connect();
+    // Conectar (força popup)
+    const res = await provider.connect({ onlyIfTrusted: false });
+
     userWallet = res.publicKey.toString();
 
     document.getElementById("wallet").innerText = "Wallet: " + userWallet;
@@ -59,7 +57,7 @@ async function connectWallet() {
 
   } catch (err) {
     console.error(err);
-    alert("Error connecting wallet");
+    alert("Wallet connection failed");
   }
 }
 
