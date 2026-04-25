@@ -1,23 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Pagamento SOL Simples</title>
+  <title>SoulHash Payment</title>
   <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
 </head>
 
-<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
+<body style="background:black;color:white;text-align:center;font-family:sans-serif;padding:20px;">
 
-<h2>Pagamento Simples SOL</h2>
+<h1>⚡ SoulHash</h1>
 
-<button onclick="connectWallet()">Conectar Wallet</button>
-<br><br>
+<button onclick="connectWallet()">Connect Wallet</button>
 
-<input id="amount" type="number" placeholder="Valor em SOL" />
-<br><br>
-
-<button onclick="sendPayment()">Pagar</button>
-
+<p id="wallet"></p>
+<p id="soulhash" style="color:gold;"></p>
 <p id="status"></p>
+
+<br>
+
+<h2>💸 Pagamentos (Evolução da Alma)</h2>
+
+<button onclick="pay(0.06)">Taxa 1 — 0.06 SOL</button>
+<br><br>
+<button onclick="pay(0.15)">Taxa 2 — 0.15 SOL</button>
+<br><br>
+<button onclick="pay(0.50)">Taxa 3 — 0.50 SOL (Premium)</button>
 
 <script>
 let userWallet = null;
@@ -31,31 +37,37 @@ const connection = new solanaWeb3.Connection(
   "confirmed"
 );
 
-// Conectar Phantom
+function generateSoulHash(wallet) {
+  let hash = 0;
+  for (let i = 0; i < wallet.length; i++) {
+    hash = (hash * 31 + wallet.charCodeAt(i)) % 1000000007;
+  }
+  return "SOUL-" + hash;
+}
+
 async function connectWallet() {
   if (!window.solana || !window.solana.isPhantom) {
-    alert("Abra no Phantom Wallet");
+    alert("Abra no Phantom");
     return;
   }
 
   const resp = await window.solana.connect();
   userWallet = resp.publicKey.toString();
 
-  document.getElementById("status").innerText =
-    "Conectado: " + userWallet;
+  document.getElementById("wallet").innerText =
+    "Wallet: " + userWallet;
+
+  document.getElementById("soulhash").innerText =
+    "SoulHash: " + generateSoulHash(userWallet);
 }
 
-// Enviar pagamento
-async function sendPayment() {
-  if (!userWallet) return alert("Conecte a wallet primeiro");
-
-  const amount = parseFloat(document.getElementById("amount").value);
-  if (!amount || amount <= 0) return alert("Valor inválido");
+async function pay(amount) {
+  if (!userWallet) return alert("Conecte a wallet");
 
   try {
     const fromPubkey = new solanaWeb3.PublicKey(userWallet);
 
-    const transaction = new solanaWeb3.Transaction().add(
+    const tx = new solanaWeb3.Transaction().add(
       solanaWeb3.SystemProgram.transfer({
         fromPubkey,
         toPubkey: RECIPIENT,
@@ -63,15 +75,12 @@ async function sendPayment() {
       })
     );
 
-    // blockhash obrigatório
     const { blockhash } = await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = fromPubkey;
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = fromPubkey;
 
-    // assinar
-    const signed = await window.solana.signTransaction(transaction);
+    const signed = await window.solana.signTransaction(tx);
 
-    // enviar
     const signature = await connection.sendRawTransaction(
       signed.serialize()
     );
@@ -79,11 +88,15 @@ async function sendPayment() {
     await connection.confirmTransaction(signature, "confirmed");
 
     document.getElementById("status").innerText =
-      "Pagamento enviado! TX: " + signature;
+      "✅ Pago: " + amount + " SOL\nTX: " + signature;
+
+    // evolução simples da alma
+    document.getElementById("soulhash").innerText =
+      "SoulHash Evoluído: " + generateSoulHash(userWallet + amount);
 
   } catch (err) {
     console.error(err);
-    alert("Erro no pagamento: " + err.message);
+    alert("Erro: " + err.message);
   }
 }
 </script>
