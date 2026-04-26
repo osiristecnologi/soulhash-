@@ -1,102 +1,98 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SoulHash Payment</title>
-  <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+  <title>SoulHash</title>
 </head>
 
-<body style="background:black;color:white;text-align:center;font-family:sans-serif;padding:20px;">
+<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
 
-<h1>⚡ SoulHash</h1>
+<h1>SoulHash</h1>
 
 <button onclick="connectWallet()">Connect Wallet</button>
 
 <p id="wallet"></p>
-<p id="soulhash" style="color:gold;"></p>
-<p id="status"></p>
 
-<br>
+<h2>Create Your Soul</h2>
 
-<h2>💸 Pagamentos (Evolução da Alma)</h2>
+<button onclick="pay('basic')">Basic Soul (0.02 SOL)</button><br><br>
+<button onclick="pay('pro')">Pro Soul (0.06 SOL)</button><br><br>
+<button onclick="pay('elite')">Elite Soul (0.1 SOL)</button>
 
-<button onclick="pay(0.06)">Taxa 1 — 0.06 SOL</button>
-<br><br>
-<button onclick="pay(0.15)">Taxa 2 — 0.15 SOL</button>
-<br><br>
-<button onclick="pay(0.50)">Taxa 3 — 0.50 SOL (Premium)</button>
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 
 <script>
-let userWallet = null;
+let userWallet = "";
 
-const RECIPIENT = new solanaWeb3.PublicKey(
-  "AbrrjK6s9ScxZzVGYw34MvvjK39utg558j7WFwtP4rcm"
-);
+// 🔑 SUA WALLET (DESTINO)
+const RECEIVER = "AbrrjK6s9ScxZzVGYw34MvvjK39utg558j7WFwtP4rcm";
 
-const connection = new solanaWeb3.Connection(
-  "https://api.mainnet-beta.solana.com",
-  "confirmed"
-);
+// 💰 PREÇOS
+const prices = {
+  basic: 0.02,
+  pro: 0.06,
+  elite: 0.1
+};
 
-function generateSoulHash(wallet) {
-  let hash = 0;
-  for (let i = 0; i < wallet.length; i++) {
-    hash = (hash * 31 + wallet.charCodeAt(i)) % 1000000007;
-  }
-  return "SOUL-" + hash;
-}
-
+// 🔗 CONECTAR PHANTOM
 async function connectWallet() {
-  if (!window.solana || !window.solana.isPhantom) {
-    alert("Abra no Phantom");
-    return;
+  try {
+    if (!window.solana || !window.solana.isPhantom) {
+      alert("Open this site inside Phantom Wallet");
+      return;
+    }
+
+    const res = await window.solana.connect();
+    userWallet = res.publicKey.toString();
+
+    document.getElementById("wallet").innerText = "Wallet: " + userWallet;
+
+  } catch (err) {
+    console.error(err);
+    alert("Connection failed");
   }
-
-  const resp = await window.solana.connect();
-  userWallet = resp.publicKey.toString();
-
-  document.getElementById("wallet").innerText =
-    "Wallet: " + userWallet;
-
-  document.getElementById("soulhash").innerText =
-    "SoulHash: " + generateSoulHash(userWallet);
 }
 
-async function pay(amount) {
-  if (!userWallet) return alert("Conecte a wallet");
-
+// 💸 PAGAMENTO REAL (MAINNET)
+async function pay(type) {
   try {
-    const fromPubkey = new solanaWeb3.PublicKey(userWallet);
+    if (!userWallet) {
+      alert("Connect wallet first");
+      return;
+    }
 
-    const tx = new solanaWeb3.Transaction().add(
+    const amount = prices[type];
+
+    const connection = new solanaWeb3.Connection(
+      solanaWeb3.clusterApiUrl("mainnet-beta"),
+      "confirmed"
+    );
+
+    const transaction = new solanaWeb3.Transaction().add(
       solanaWeb3.SystemProgram.transfer({
-        fromPubkey,
-        toPubkey: RECIPIENT,
+        fromPubkey: new solanaWeb3.PublicKey(userWallet),
+        toPubkey: new solanaWeb3.PublicKey(RECEIVER),
         lamports: amount * solanaWeb3.LAMPORTS_PER_SOL
       })
     );
 
+    transaction.feePayer = new solanaWeb3.PublicKey(userWallet);
+
     const { blockhash } = await connection.getLatestBlockhash();
-    tx.recentBlockhash = blockhash;
-    tx.feePayer = fromPubkey;
+    transaction.recentBlockhash = blockhash;
 
-    const signed = await window.solana.signTransaction(tx);
+    const signed = await window.solana.signTransaction(transaction);
 
-    const signature = await connection.sendRawTransaction(
-      signed.serialize()
-    );
+    const signature = await connection.sendRawTransaction(signed.serialize());
 
-    await connection.confirmTransaction(signature, "confirmed");
+    await connection.confirmTransaction(signature);
 
-    document.getElementById("status").innerText =
-      "✅ Pago: " + amount + " SOL\nTX: " + signature;
+    alert("✅ Payment successful!\nTX: " + signature);
 
-    // evolução simples da alma
-    document.getElementById("soulhash").innerText =
-      "SoulHash Evoluído: " + generateSoulHash(userWallet + amount);
+    // 🔥 AQUI DEPOIS VAMOS VALIDAR NO BACKEND
 
   } catch (err) {
     console.error(err);
-    alert("Erro: " + err.message);
+    alert("Payment failed");
   }
 }
 </script>
