@@ -3,6 +3,8 @@
 <head>
 <title>SoulHash</title>
 
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+
 <style>
 body {
   margin:0;
@@ -16,18 +18,12 @@ body {
   height:100vh;
 }
 
-/* LEFT */
 .left {
   width:20%;
   padding:20px;
   border-right:1px solid #222;
 }
 
-.left h2 {
-  color:gold;
-}
-
-/* CENTER */
 .center {
   width:60%;
   text-align:center;
@@ -50,22 +46,14 @@ body {
   margin-bottom:30px;
 }
 
-/* RIGHT */
 .right {
   width:20%;
   padding:20px;
   border-left:1px solid #222;
 }
 
-.bar {
-  height:8px;
-  background:#222;
-  margin-bottom:10px;
-}
-
-.fill {
-  height:8px;
-}
+.bar { height:8px; background:#222; margin-bottom:10px; }
+.fill { height:8px; }
 
 .light { width:35%; background:gold; }
 .dark { width:25%; background:purple; }
@@ -85,10 +73,8 @@ button {
 
 <div class="container">
 
-<!-- LEFT -->
 <div class="left">
 <h2>SOUL</h2>
-
 <p id="wallet">Wallet: -</p>
 <p id="balance">Balance: -</p>
 <p id="soulhash">SoulHash: -</p>
@@ -96,20 +82,15 @@ button {
 <button onclick="connectWallet()">Connect Wallet</button>
 </div>
 
-<!-- CENTER -->
 <div class="center">
-
 <div class="circle">S</div>
 
-<button onclick="pay('basic')">Basic 0.02</button>
-<button onclick="pay('pro')">Pro 0.06</button>
-<button onclick="pay('elite')">Elite 0.1</button>
-
+<button onclick="pay(0.02)">Basic 0.02 SOL</button>
+<button onclick="pay(0.06)">Pro 0.06 SOL</button>
+<button onclick="pay(0.1)">Elite 0.1 SOL</button>
 </div>
 
-<!-- RIGHT -->
 <div class="right">
-
 <h3>Attributes</h3>
 
 <p>Light</p>
@@ -122,27 +103,35 @@ button {
 <div class="bar"><div class="fill balance"></div></div>
 
 <p>SHASH: <span id="shash">0</span></p>
-
 </div>
 
 </div>
-
-<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 
 <script>
-let userWallet = "";
 
+// ===== CONFIG =====
+let userWallet = "";
 const RECEIVER = "AbrrjK6s9ScxZzVGYw34MvvjK39utg558j7WFwtP4rcm";
 
-const prices = {
-  basic: 0.02,
-  pro: 0.06,
-  elite: 0.1
-};
+// ===== HASH =====
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
 
+function formatHash(hex) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 12; i++) {
+    result += chars[parseInt(hex.slice(i*2,i*2+2),16) % chars.length];
+  }
+  return result;
+}
+
+// ===== CONNECT =====
 async function connectWallet() {
   if (!window.solana || !window.solana.isPhantom) {
-    alert("Open in Phantom");
+    alert("Abra dentro da Phantom Wallet");
     return;
   }
 
@@ -161,18 +150,16 @@ async function connectWallet() {
 
   document.getElementById("balance").innerText =
     "Balance: " + (balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4) + " SOL";
-
-  const response = await fetch("https://soulhash-api.onrender.com/login", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ wallet: userWallet })
-  });
-
-  const data = await response.json();
-  document.getElementById("soulhash").innerText = "SoulHash: " + data.soulhash;
 }
 
-async function pay(type) {
+// ===== PAGAMENTO =====
+async function pay(amount) {
+
+  if (!userWallet) {
+    await connectWallet();
+    if (!userWallet) return;
+  }
+
   const connection = new solanaWeb3.Connection(
     solanaWeb3.clusterApiUrl("mainnet-beta"),
     "confirmed"
@@ -182,7 +169,7 @@ async function pay(type) {
     solanaWeb3.SystemProgram.transfer({
       fromPubkey: new solanaWeb3.PublicKey(userWallet),
       toPubkey: new solanaWeb3.PublicKey(RECEIVER),
-      lamports: prices[type] * solanaWeb3.LAMPORTS_PER_SOL
+      lamports: amount * solanaWeb3.LAMPORTS_PER_SOL
     })
   );
 
@@ -191,15 +178,41 @@ async function pay(type) {
   const { blockhash } = await connection.getLatestBlockhash();
   transaction.recentBlockhash = blockhash;
 
-  const result = await window.solana.signAndSendTransaction(transaction);
-  await connection.confirmTransaction(result.signature);
+  try {
+    const result = await window.solana.signAndSendTransaction(transaction);
+    await connection.confirmTransaction(result.signature);
 
-  let reward = type === "basic" ? 10 : type === "pro" ? 50 : 100;
-  document.getElementById("shash").innerText =
-    parseInt(document.getElementById("shash").innerText) + reward;
+    // ===== GERA HASH =====
+    const hex = await sha256(userWallet + result.signature);
+    const hash = formatHash(hex);
 
-  alert("Payment success");
+    document.getElementById("soulhash").innerText = "SoulHash: " + hash;
+
+    // ===== ENVIA BACKEND =====
+    fetch("https://soulhash-api.onrender.com/payment", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        wallet: userWallet,
+        hash: hash,
+        tx: result.signature
+      })
+    });
+
+    // ===== RECOMPENSA =====
+    let reward = amount === 0.02 ? 10 : amount === 0.06 ? 50 : 100;
+
+    document.getElementById("shash").innerText =
+      parseInt(document.getElementById("shash").innerText) + reward;
+
+    alert("Pagamento confirmado 🔥");
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro no pagamento ❌");
+  }
 }
+
 </script>
 
 </body>
