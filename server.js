@@ -1,50 +1,51 @@
-import express from "express";
-import crypto from "crypto";
-import cors from "cors";
+const express = require("express");
+const cors = require("cors");
+const crypto = require("crypto");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-let users = {};
+// TESTE
+app.get("/", (req, res) => {
+  res.send("API SoulHash online 🚀");
+});
 
-// gerar SoulHash
-function generateSoulHash(wallet) {
-  return crypto
+// LOGIN → gera hash fixo da wallet
+app.post("/login", (req, res) => {
+  const { wallet } = req.body;
+
+  const hash = crypto
     .createHash("sha256")
     .update(wallet)
     .digest("hex")
     .slice(0, 12)
     .toUpperCase();
-}
 
-// login com wallet
-app.post("/login", (req, res) => {
-  const { wallet } = req.body;
+  res.json({ soulhash: hash });
+});
 
-  if (!users[wallet]) {
-    users[wallet] = {
-      soulhash: generateSoulHash(wallet),
-      luz: 0,
-      sombra: 0,
-      equilibrio: 0,
-    };
+// PAGAMENTO → gera hash com assinatura
+app.post("/payment", (req, res) => {
+  const { signature, wallet } = req.body;
+
+  if (!signature || !wallet) {
+    return res.status(400).json({ error: "Dados inválidos" });
   }
 
-  res.json(users[wallet]);
+  const hash = crypto
+    .createHash("sha256")
+    .update(wallet + signature)
+    .digest("hex")
+    .slice(0, 12)
+    .toUpperCase();
+
+  res.json({ hash });
 });
 
-// aplicar escolha
-app.post("/choice", (req, res) => {
-  const { wallet, choice } = req.body;
+const PORT = process.env.PORT || 3000;
 
-  let user = users[wallet];
-
-  if (choice === "light") user.luz += 10;
-  if (choice === "shadow") user.sombra += 10;
-  if (choice === "balance") user.equilibrio += 10;
-
-  res.json(user);
+app.listen(PORT, () => {
+  console.log("Servidor rodando na porta " + PORT);
 });
-
-app.listen(3000, () => console.log("Server running"));
