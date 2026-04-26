@@ -1,23 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SoulHash</title>
+  <title>SoulHash Web3</title>
 </head>
 
-<body style="background:black;color:white;text-align:center;font-family:sans-serif;">
+<body style="background:#0b0f1a;color:white;font-family:sans-serif;text-align:center;">
 
-<h1>SoulHash</h1>
+<h1>SOULHASH</h1>
 
 <button onclick="connectWallet()">Connect Wallet</button>
 
 <p id="wallet"></p>
+<p id="balance"></p>
 <p id="soulhash"></p>
 
-<h2>Create Your Soul</h2>
+<hr>
 
-<button onclick="pay('basic')">Basic Soul (0.02 SOL)</button><br><br>
-<button onclick="pay('pro')">Pro Soul (0.06 SOL)</button><br><br>
-<button onclick="pay('elite')">Elite Soul (0.1 SOL)</button>
+<h2>Create / Upgrade Soul</h2>
+
+<button onclick="pay('basic')">Basic (0.02 SOL)</button><br><br>
+<button onclick="pay('pro')">Pro (0.06 SOL)</button><br><br>
+<button onclick="pay('elite')">Elite (0.1 SOL)</button>
+
+<hr>
+
+<h2>Economy</h2>
+<p>SHASH: <span id="shash">0</span></p>
 
 <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 
@@ -34,7 +42,7 @@ const prices = {
   elite: 0.1
 };
 
-// 🔑 CONECTAR + GERAR HASH
+// 🔗 CONECTAR WALLET
 async function connectWallet() {
   try {
     if (!window.solana || !window.solana.isPhantom) {
@@ -47,10 +55,24 @@ async function connectWallet() {
 
     document.getElementById("wallet").innerText = "Wallet: " + userWallet;
 
+    // 💰 PEGAR SALDO
+    const connection = new solanaWeb3.Connection(
+      solanaWeb3.clusterApiUrl("mainnet-beta")
+    );
+
+    const balance = await connection.getBalance(
+      new solanaWeb3.PublicKey(userWallet)
+    );
+
+    document.getElementById("balance").innerText =
+      "Balance: " + (balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4) + " SOL";
+
     // 🔥 GERAR HASH
     const response = await fetch("https://soulhash-api.onrender.com/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ wallet: userWallet })
     });
 
@@ -65,7 +87,7 @@ async function connectWallet() {
   }
 }
 
-// 💸 PAGAMENTO REAL (FUNCIONANDO NO MOBILE)
+// 💸 PAGAMENTO
 async function pay(type) {
   try {
     if (!userWallet) {
@@ -93,14 +115,22 @@ async function pay(type) {
     const { blockhash } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
 
-    // 🔥 CORRETO PRA PHANTOM MOBILE
     const result = await window.solana.signAndSendTransaction(transaction);
 
     await connection.confirmTransaction(result.signature);
 
-    alert("✅ Payment success!\nTX: " + result.signature);
+    alert("Payment success!");
 
-    // 🔥 OPCIONAL: avisar backend depois do pagamento
+    // 💰 RECOMPENSA SIMPLES (frontend)
+    let reward = 0;
+    if (type === "basic") reward = 10;
+    if (type === "pro") reward = 50;
+    if (type === "elite") reward = 100;
+
+    let current = parseInt(document.getElementById("shash").innerText);
+    document.getElementById("shash").innerText = current + reward;
+
+    // 🔥 ENVIA PRO BACKEND
     await fetch("https://soulhash-api.onrender.com/payment", {
       method: "POST",
       headers: {
@@ -115,7 +145,7 @@ async function pay(type) {
 
   } catch (err) {
     console.error(err);
-    alert("Payment failed: " + err.message);
+    alert("Payment failed");
   }
 }
 </script>
