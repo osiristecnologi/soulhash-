@@ -272,8 +272,8 @@ app.post('/login', authLimiter, (req, res) => {
       p1_choice:   null,
       p2_choice:   null,
       coins: 100, // bônus inicial
-  )};
-} 
+    });
+}); 
   const soul = db.souls.get(wallet);
 
   return res.json({
