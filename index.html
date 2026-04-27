@@ -58,7 +58,33 @@ button{
 
 /* resto do seu CSS continua igual (não foi alterado estrutura) */
 
-</style>
+</style> html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+.screen.active {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+button {
+  max-width: 90%;
+}
+
+@media (max-width: 768px) {
+  .connect-wrap {
+    width: 100%;
+    padding: 20px;
+  }
+
+  #s-connect {
+    padding: 20px;
+  }
+}
 </head>
 
 <body>
