@@ -271,9 +271,9 @@ app.post('/login', authLimiter, (req, res) => {
       fase_atual:  1,
       p1_choice:   null,
       p2_choice:   null,
-    });
-  }
-
+      coins: 100, // bônus inicial
+  )};
+} 
   const soul = db.souls.get(wallet);
 
   return res.json({
@@ -285,7 +285,7 @@ app.post('/login', authLimiter, (req, res) => {
     fase_atual: soul.fase_atual,
     p1_choice:  soul.p1_choice,
     p2_choice:  soul.p2_choice,
-  });
+    });
 });
 
 /**
