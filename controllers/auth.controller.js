@@ -1,7 +1,24 @@
 import User from "../models/user.model.js";
 import crypto from "crypto";
+import bs58 from "bs58";
 
-// 🔐 Gera SoulHash fixo (NUNCA muda depois de criado)
+// ===============================
+// 🔐 UTILS
+// ===============================
+
+function isValidSolanaAddress(addr) {
+  try {
+    return bs58.decode(addr).length === 32;
+  } catch {
+    return false;
+  }
+}
+
+function normalizeWallet(wallet) {
+  return wallet.trim();
+}
+
+// 🔐 Gera SoulHash FIXO
 function generateSoulHash(wallet) {
   return crypto
     .createHash("sha256")
@@ -16,10 +33,17 @@ function generateSoulHash(wallet) {
 // ===============================
 export async function login(req, res) {
   try {
-    const { wallet } = req.body;
+    let { wallet } = req.body;
 
+    // 🔒 validação básica
     if (!wallet) {
       return res.status(400).json({ error: "Wallet obrigatória" });
+    }
+
+    wallet = normalizeWallet(wallet);
+
+    if (!isValidSolanaAddress(wallet)) {
+      return res.status(400).json({ error: "Wallet inválida" });
     }
 
     // 🔍 procura usuário
@@ -27,39 +51,30 @@ export async function login(req, res) {
 
     // 🧬 SE NÃO EXISTIR → cria nova alma
     if (!user) {
-      user = await User.create({
+      user = new User({
         wallet,
         soulhash: generateSoulHash(wallet),
-
-        attrs: {
-          luz: 0,
-          sombra: 0,
-          equilibrio: 0,
-          caos: 0,
-          empatia: 0,
-        },
-
-        stats: {
-          missoes: 0,
-          escolhas: 0,
-          almas: 0,
-          confrontos: 0,
-          xp: 0,
-        },
       });
+
+      await user.save();
     }
 
-    // ⚠️ NUNCA gerar soulhash de novo aqui
+    // 🔄 atualiza último login
+    user.lastLogin = new Date();
+    await user.save();
+
+    // 🚀 resposta limpa
     return res.json({
       wallet: user.wallet,
       soulhash: user.soulhash,
-      createdAt: user.createdAt,
+      coins: user.coins,
       attrs: user.attrs,
       stats: user.stats,
+      createdAt: user.createdAt,
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("LOGIN ERROR:", err);
     return res.status(500).json({ error: "Erro no login" });
   }
 }
