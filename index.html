@@ -1,4 +1,105 @@
-<!DOCTYPE html>
+<style>
+body{
+  background:#0b0f1a;
+  color:#fff;
+  font-family:Arial;
+  text-align:center;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,100px);
+  gap:10px;
+  justify-content:center;
+  margin:20px;
+}
+
+.card{
+  width:100px;
+  height:120px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  font-weight:bold;
+  font-size:14px;
+}
+
+.luz{background:gold; color:black;}
+.sombra{background:purple;}
+.caos{background:red;}
+.empatia{background:green;}
+.equilibrio{background:blue;}
+
+button{
+  padding:15px 30px;
+  font-size:18px;
+  background:purple;
+  color:white;
+  border:none;
+  border-radius:10px;
+}
+</style>
+
+<h1>SOULHASH SLOT</h1>
+
+<div class="grid" id="grid"></div>
+
+<button onclick="girar()">GIRAR</button>
+
+<h2 id="resultado"></h2>
+
+<script>
+const tipos = ["luz","sombra","caos","empatia","equilibrio"];
+
+function gerarGrid(){
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  let valores = [];
+
+  for(let i=0;i<9;i++){
+    let tipo = tipos[Math.floor(Math.random()*tipos.length)];
+    valores.push(tipo);
+
+    let div = document.createElement("div");
+    div.className = "card "+tipo;
+    div.innerText = tipo.toUpperCase();
+
+    grid.appendChild(div);
+  }
+
+  verificar(valores);
+}
+
+function verificar(v){
+  let linhas = [
+    [0,1,2],
+    [3,4,5],
+    [6,7,8],
+    [0,4,8],
+    [2,4,6]
+  ];
+
+  let ganhou = false;
+
+  for(let l of linhas){
+    if(v[l[0]] === v[l[1]] && v[l[1]] === v[l[2]]){
+      ganhou = true;
+    }
+  }
+
+  document.getElementById("resultado").innerText =
+    ganhou ? "🔥 COMBINAÇÃO ATIVADA!" : "❌ nada...";
+}
+
+function girar(){
+  gerarGrid();
+}
+
+// inicia
+gerarGrid();
+</script><!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
