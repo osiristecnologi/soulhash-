@@ -1,34 +1,11 @@
 {
-  "name": "soulhash-api",
-  "version": "2.1.0",
-  "description": "SoulHash Backend — Secure Web3 Auth + Game + Payments",
-  "main": "server.js",
-  "type": "commonjs",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "prod": "NODE_ENV=production node server.js"
-  },
-  "keywords": [
-    "solana",
-    "web3",
-    "auth",
-    "game",
-    "memecoin",
-    "soulhash"
-  ],
-  "author": "Leonardo Farias",
-  "license": "MIT",
+  "name": "soulhash-api-v2",
+  "version": "2.0.0",
+  "scripts": { "start": "node server.js", "dev": "nodemon server.js" },
   "dependencies": {
-    "bs58": "^5.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.0",
-    "express": "^4.19.0",
-    "express-rate-limit": "^7.3.0",
-    "helmet": "^7.1.0",
-    "tweetnacl": "^1.0.3"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
+    "bs58": "^5.0.0", "cors": "^2.8.5", "dotenv": "^16.0.0",
+    "express": "^4.18.0", "express-rate-limit": "^7.0.0",
+    "helmet": "^7.0.0", "tweetnacl": "^1.0.3"
   }
 }
+
