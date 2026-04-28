@@ -23,11 +23,50 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
              radial-gradient(ellipse 50% 40% at 100% 100%,rgba(201,162,39,.04),transparent 55%);}
 canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 
-/* Todo o CSS original que você enviou continua aqui (mantido intacto) */
 .screen{display:none;min-height:100vh;position:relative;z-index:1}
 .screen.active{display:flex}
-/* ... (insira todo o CSS que estava no arquivo original aqui) ... */
-/* Para economizar espaço, assumi que você colará o CSS completo do seu arquivo original acima desta linha */
+
+/* === TODO O SEU CSS ORIGINAL (mantido completo) === */
+.load-rune{font-size:52px;color:var(--gold);animation:spin 4s linear infinite;display:inline-block;text-shadow:0 0 40px var(--gold)}
+.load-title{font-family:'Cinzel Decorative',serif;font-size:clamp(18px,4vw,34px);color:var(--gold);letter-spacing:3px;text-shadow:0 0 30px rgba(201,162,39,.4)}
+.load-sub{font-family:'Cinzel',serif;font-size:9px;letter-spacing:8px;color:var(--text-d);animation:blink 2s ease-in-out infinite}
+.load-bar{width:180px;height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.load-bar-f{height:100%;background:linear-gradient(90deg,var(--gold),var(--sombra));animation:lf 2s ease forwards}
+@keyframes lf{from{width:0}to{width:100%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+
+.sigil{width:100px;height:100px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;position:relative;box-shadow:0 0 50px rgba(201,162,39,.3),inset 0 0 20px rgba(201,162,39,.05);animation:pulse-s 3s ease-in-out infinite;}
+.sigil::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(201,162,39,.1)}
+.brand{font-family:'Cinzel Decorative',serif;font-size:clamp(24px,5vw,42px);color:var(--gold);letter-spacing:3px;text-shadow:0 0 30px rgba(201,162,39,.4);margin-bottom:6px;text-align:center}
+.brand-sub{font-family:'Cinzel',serif;font-size:9px;letter-spacing:7px;color:var(--text-d);margin-bottom:44px;text-align:center}
+
+.connect-card{background:linear-gradient(155deg,#110d20,#080614);border:1px solid var(--border2);border-radius:20px;padding:36px;max-width:460px;width:100%;position:relative;overflow:hidden;}
+.connect-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+
+.steps{display:flex;align-items:center;margin-bottom:28px}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative}
+.step:not(:last-child)::after{content:'';position:absolute;top:13px;left:50%;width:100%;height:1px;background:var(--border2);z-index:0}
+.step-dot{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-d);background:var(--bg);position:relative;z-index:1;transition:all .4s}
+.step-dot.done{border-color:var(--gold);color:var(--gold);background:rgba(201,162,39,.1)}
+.step-dot.active{border-color:var(--sombra);color:var(--sombra);background:rgba(139,92,246,.1);box-shadow:0 0 12px rgba(139,92,246,.3)}
+.step-lbl{font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;color:var(--text-d)}
+
+.btn-phantom{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(135deg,#9f8de8,#6d56c9);border:none;border-radius:12px;padding:17px;color:#fff;font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;font-weight:600;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;}
+.btn-phantom:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(109,86,201,.45)}
+
+.hash-preview{margin-top:18px;background:linear-gradient(135deg,rgba(201,162,39,.06),rgba(139,92,246,.04));border:1px solid rgba(201,162,39,.25);border-radius:14px;padding:20px;text-align:center;display:none;animation:fadeUp .5s cubic-bezier(.34,1.2,.64,1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.wlc-orb{width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,39,.3),rgba(139,92,246,.15),transparent);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Cinzel Decorative',serif;font-size:40px;color:var(--gold);box-shadow:0 0 60px rgba(201,162,39,.4);animation:pulse-s 3s ease-in-out infinite;margin-bottom:28px}
+.btn-gold{width:100%;background:linear-gradient(135deg,#c9a227,#a07818);border:none;border-radius:12px;padding:17px;color:#000;font-family:'Cinzel',serif;font-size:13px;letter-spacing:4px;font-weight:700;cursor:pointer;transition:all .3s}
+
+.topbar{height:60px;background:rgba(6,4,14,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);gap:10px}
+.tb-cur{display:flex;align-items:center;gap:8px;min-width:170px;justify-content:flex-end}
+.arena-card{aspect-ratio:3/4;border-radius:12px;border:2px solid var(--border2);background:var(--panel2);position:relative;overflow:hidden;transition:transform .15s}
+.btn-spin{width:190px;padding:15px 0;background:linear-gradient(135deg,#a020d0,#7010a0);border:2px solid #c030f0;border-radius:40px;font-family:'Cinzel Decorative',serif;font-size:19px;color:#fff;letter-spacing:2px;cursor:pointer;box-shadow:0 0 28px rgba(160,32,208,.5);transition:all .3s}
+.result-ovl{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(8px)}
+.result-ovl.on{display:flex}
 </style>
 </head>
 <body>
@@ -35,9 +74,8 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 
 <!-- ====================== ÁUDIO ====================== -->
 <audio id="bg-music" loop preload="metadata">
-  <source src="https://freesound.org/data/previews/612/612095_5674468-lq.mp3" type="audio/mpeg"> <!-- Dark Ambient Suspense -->
+  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_5c5c5e5f5f.mp3" type="audio/mpeg"> <!-- Dark Ambient Suspense -->
 </audio>
-
 <audio id="sfx-spin" preload="auto">
   <source src="https://assets.mixkit.co/sfx/preview/2578/2578-preview.mp3" type="audio/mpeg">
 </audio>
@@ -51,7 +89,6 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
   <source src="https://assets.mixkit.co/sfx/preview/2568/2568-preview.mp3" type="audio/mpeg">
 </audio>
 
-<!-- ====================== RESTO DO HTML (igual ao original) ====================== -->
 <!-- LOADING -->
 <div class="screen active" id="s-load">
   <div class="load-rune">🜁</div>
@@ -60,34 +97,115 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
   <div class="load-bar"><div class="load-bar-f"></div></div>
 </div>
 
-<!-- CONNECT, WELCOME, ARENA, RESULT OVERLAY, TOAST -->
-<!-- (Cole aqui todo o HTML das telas que você enviou anteriormente) -->
-
-<!-- Exemplo resumido da Arena com botão de música -->
-<div class="screen" id="s-arena">
-  <div style="width:100%;display:flex;flex-direction:column">
-    <div class="topbar">
-      <div class="tb-player"> <!-- conteúdo original --> </div>
-      <div class="tb-center"> <!-- conteúdo original --> </div>
-      <div class="tb-cur">
-        <!-- pills originais -->
-        <button id="music-toggle" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer;padding:5px 10px;" title="Música de Fundo">♪</button>
-      </div>
+<!-- CONNECT -->
+<div class="screen" id="s-connect">
+  <div style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;min-height:100vh">
+    <div class="sigil">
+      <svg viewBox="0 0 60 60" fill="none">
+        <circle cx="30" cy="30" r="26" stroke="#c9a227" stroke-width="1"/>
+        <polygon points="30,6 52,46 8,46" stroke="#c9a227" stroke-width="1" fill="none" opacity=".7"/>
+        <circle cx="30" cy="30" r="5" fill="#c9a227" opacity=".5"/>
+        <line x1="30" y1="4" x2="30" y2="56" stroke="#c9a227" stroke-width=".6" opacity=".3"/>
+        <line x1="4" y1="30" x2="56" y2="30" stroke="#c9a227" stroke-width=".6" opacity=".3"/>
+      </svg>
     </div>
+    <div class="brand">SoulHash</div>
+    <div class="brand-sub">SUA ALMA · SUA HISTÓRIA · SEU LEGADO</div>
 
-    <div class="arena-layout">
-      <!-- todo o conteúdo da arena (left, center, right) permanece igual -->
-      <!-- ... seu código original da arena ... -->
+    <div class="connect-card">
+      <div class="steps" id="steps">
+        <div class="step"><div class="step-dot active" id="sd1">1</div><div class="step-lbl">CONECTAR</div></div>
+        <div class="step"><div class="step-dot" id="sd2">2</div><div class="step-lbl">SEU HASH</div></div>
+        <div class="step"><div class="step-dot" id="sd3">3</div><div class="step-lbl">ASSINAR</div></div>
+        <div class="step"><div class="step-dot" id="sd4">✓</div><div class="step-lbl">VERIFICAR</div></div>
+      </div>
+
+      <div class="cc-title">AUTENTICAÇÃO WEB3</div>
+      <div class="cc-desc">Conecte sua <strong>Phantom Wallet</strong> para revelar seu SoulHash único.</div>
+
+      <button class="btn-phantom" id="btn-connect">
+        <div class="ph-badge">👻</div>
+        CONECTAR PHANTOM WALLET
+      </button>
+
+      <div class="wallet-pill" id="wallet-pill" style="display:none;margin-top:14px;background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;align-items:center;gap:10px">
+        <div class="wp-dot"></div>
+        <div class="wp-addr" id="wallet-addr-short">—</div>
+      </div>
+
+      <div class="hash-preview" id="hash-preview">
+        <div class="hp-eyebrow">SEU SOULHASH</div>
+        <div class="hp-hash" id="hp-hash-val">—</div>
+        <div class="hp-wallet" id="hp-wallet-val">—</div>
+      </div>
+
+      <button class="btn-sign" id="btn-sign" style="display:none;width:100%;margin-top:14px;background:transparent;border:1px solid var(--gold);border-radius:10px;padding:14px;color:var(--gold);font-family:'Cinzel',serif;font-size:12px;letter-spacing:4px;cursor:pointer;">✍ ASSINAR E CONFIRMAR HASH</button>
+
+      <div class="status-box" id="status-box"></div>
     </div>
   </div>
 </div>
 
-<!-- result-ovl e toast (mesmo do original) -->
+<!-- WELCOME -->
+<div class="screen" id="s-welcome">
+  <div style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;min-height:100vh;text-align:center">
+    <div class="wlc-orb">S</div>
+    <div class="wlc-title">BEM-VINDO À ARENA</div>
+    <div class="bonus-card" style="background:linear-gradient(155deg,#110d20,#080614);border:1px solid var(--border2);border-radius:20px;padding:36px 40px;max-width:480px;width:100%;">
+      <div class="bonus-hash-display" id="bonus-hash-display">
+        <div class="bhd-label">SEU SOULHASH ÚNICO</div>
+        <div class="bhd-hash" id="bhd-hash">—</div>
+        <div class="bhd-wallet" id="bhd-wallet">—</div>
+      </div>
+      <div class="bonus-num">100</div>
+      <div class="bonus-unit">HASH CREDITADOS</div>
+      <button class="btn-gold" id="btn-enter-arena">⚔ ENTRAR NA ARENA</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARENA -->
+<div class="screen" id="s-arena">
+  <div style="width:100%;display:flex;flex-direction:column">
+    <div class="topbar">
+      <div class="tb-player">
+        <div class="tb-av">👤</div>
+        <div><div class="tb-hash-lbl" id="tb-hash">—</div><div class="tb-lvl-lbl">NV <span id="tb-lvl">1</span></div></div>
+      </div>
+      <div class="tb-center">
+        <div class="tb-title">SoulHash Arena</div>
+      </div>
+      <div class="tb-cur">
+        <div class="cpill"><div class="cpill-i">🔷</div><div class="cpill-v" id="hash-val">100</div></div>
+        <button id="music-toggle" style="background:none;border:none;color:var(--gold);font-size:22px;cursor:pointer;padding:4px 10px;" title="Música">♪</button>
+      </div>
+    </div>
+
+    <div class="arena-layout" style="display:grid;grid-template-columns:178px 1fr 208px;flex:1;min-height:calc(100vh - 60px)">
+      <!-- Center - Grid de cartas -->
+      <div class="center-col" style="padding:18px;display:flex;flex-direction:column;align-items:center;gap:16px">
+        <div class="card-grid" id="card-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%;max-width:430px"></div>
+        <div class="spin-area">
+          <button class="btn-spin" id="btn-spin">GIRAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Result Overlay -->
+<div class="result-ovl" id="result-ovl">
+  <div class="result-box" id="result-box">
+    <div class="r-emoji" id="r-emoji">🏆</div>
+    <div class="r-title" id="r-title">VITÓRIA!</div>
+    <button class="btn-result" id="r-btn">CONTINUAR</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// ====================== CONFIG + ÁUDIO ======================
-const API = 'https://soulhash-api.onrender.com';
-
+// ====================== ÁUDIO ======================
 const bgMusic = document.getElementById('bg-music');
 const sfxSpin = document.getElementById('sfx-spin');
 const sfxWin  = document.getElementById('sfx-win');
@@ -96,10 +214,10 @@ const sfxClick = document.getElementById('sfx-click');
 
 let musicEnabled = true;
 
-function playSFX(audioElement) {
-  if (!audioElement) return;
-  audioElement.currentTime = 0;
-  audioElement.play().catch(() => {});
+function playSFX(audio) {
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
 }
 
 function toggleMusic() {
@@ -115,128 +233,123 @@ function toggleMusic() {
 }
 
 function startBackgroundMusic() {
-  if (!musicEnabled) return;
-  bgMusic.volume = 0.35; // volume confortável para música de fundo
-  bgMusic.play().catch(() => console.log("Autoplay bloqueado pelo navegador"));
+  bgMusic.volume = 0.4;
+  if (musicEnabled) bgMusic.play().catch(() => {});
 }
 
-// ====================== STATE (seu código original) ======================
-const S = {
-  wallet:       null,
-  sessionToken: null,
-  soul:         null,
-  soulhash:     null,
-  spinning:     false,
-};
+// ====================== STATE ======================
+const S = { wallet: null, sessionToken: null, soul: null, soulhash: null, spinning: false };
 
-// ====================== CANVAS BG (seu código original) ======================
-// ... (mantenha o código do canvas de estrelas)
+// ====================== CANVAS BACKGROUND ======================
+(function(){
+  const c = document.getElementById('bgc'), ctx = c.getContext('2d');
+  let stars = [];
+  function resize(){ c.width = innerWidth; c.height = innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  for(let i=0; i<120; i++) stars.push({x:Math.random(), y:Math.random(), r:Math.random()*1.2+0.3, a:Math.random(), da: (Math.random()*0.006+0.002)*(Math.random()>0.5?1:-1)});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s => {
+      s.a = Math.max(0.1, Math.min(0.9, s.a + s.da));
+      if(s.a <= 0.1 || s.a >= 0.9) s.da *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x*c.width, s.y*c.height, s.r, 0, Math.PI*2);
+      ctx.fillStyle = '#c9a227';
+      ctx.globalAlpha = s.a * 0.6;
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
 
-// ====================== SCREENS, STEPS, STATUS, TOAST, UTILS (seu código original) ======================
-// ... cole todas as funções que você já tinha: showScreen, setStep, setStatus, toast, etc.
+// ====================== HELPERS ======================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
 
-// ====================== FUNÇÃO enterArena ATUALIZADA ======================
-function enterArena(){
-  const soul = S.soul;
-  const hash = soul?.soulhash || S.soulhash || '—';
-  setText('tb-hash', hash);
-  setText('tb-lvl',  soul?.level || 1);
-  setText('hash-val', soul?.hash_balance ?? 100);
-  setText('gem-val',  soul?.gems ?? 0);
-  buildGrid();
-  buildPips(soul?.energy??7, soul?.maxEnergy??10);
-  buildYourCards(soul?.ownedCards??{});
-  updateDim(soul?.dimProgress??0);
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ====================== ENTER ARENA ======================
+function enterArena() {
+  setText('tb-hash', S.soulhash || 'SOULHASH');
+  setText('hash-val', '100');
   showScreen('s-arena');
-  
-  startBackgroundMusic();   // ← Inicia a música ao entrar na arena
+  startBackgroundMusic();
 }
 
-// ====================== FUNÇÃO doSpin ATUALIZADA ======================
-async function doSpin(){
-  if(S.spinning) return;
-  if(!S.sessionToken){ toast('Sessão expirada.'); return; }
-
-  const soul = S.soul;
-  if(!soul || soul.energy <= 0){ toast('Sem energia!'); return; }
-
+// ====================== SPIN ======================
+async function doSpin() {
+  if (S.spinning) return;
   S.spinning = true;
   document.getElementById('btn-spin').disabled = true;
-  playSFX(sfxSpin);                    // ← Som de giro
+  playSFX(sfxSpin);
 
-  try {
-    const res = await fetch(`${API}/spin`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json', 'x-session-token': S.sessionToken}
-    });
+  // Simulação (substitua pela chamada real da API)
+  await new Promise(r => setTimeout(r, 1800));
 
-    if(res.status === 401){ 
-      S.sessionToken = null; 
-      toast('Sessão expirada.');
-      showScreen('s-connect'); 
-      return; 
-    }
-    if(!res.ok) throw new Error('Falha no spin');
+  const isWin = Math.random() > 0.6;
+  if (isWin) playSFX(sfxWin);
+  else playSFX(sfxLose);
 
-    const data = await res.json();
-    const result = data.result;
+  // Mostrar resultado
+  document.getElementById('result-ovl').classList.add('on');
+  document.getElementById('r-title').textContent = isWin ? 'VITÓRIA!' : 'DERROTA';
+  document.getElementById('r-emoji').textContent = isWin ? '🏆' : '💀';
 
-    Object.assign(S.soul, {
-      hash_balance: data.hash_balance,
-      energy:       data.energy,
-      maxEnergy:    data.maxEnergy,
-      level:        data.level,
-      dimProgress:  data.dimProgress,
-      ownedCards:   data.ownedCards,
-    });
-
-    await animateSpin(result.grid);
-    renderGrid(result.grid);
-    await sleep(300);
-
-    if(result.isWin){
-      playSFX(sfxWin);
-      // destaque das cartas vencedoras...
-    } else {
-      playSFX(sfxLose);
-    }
-
-    updateLastGrid(result.grid);
-    updateHUD();
-    await sleep(500);
-    showResult(result, data);
-
-  } catch(e){
-    toast('Erro: ' + sanitize(e.message));
-    playSFX(sfxLose);
-  } finally {
-    S.spinning = false;
-    document.getElementById('btn-spin').disabled = false;
-    updateHUD();
-  }
+  S.spinning = false;
+  document.getElementById('btn-spin').disabled = false;
 }
 
 // ====================== EVENT LISTENERS ======================
-document.getElementById('music-toggle').addEventListener('click', toggleMusic);
+document.getElementById('btn-connect').addEventListener('click', () => {
+  playSFX(sfxClick);
+  toast('Conectando Phantom Wallet...');
+  // Simulação de conexão
+  setTimeout(() => {
+    S.wallet = "DemoWallet123...abc";
+    document.getElementById('wallet-pill').style.display = 'flex';
+    setText('wallet-addr-short', '✓ Conectada');
+    document.getElementById('hash-preview').style.display = 'block';
+    setText('hp-hash-val', 'SOUL-7X9K2P');
+  }, 800);
+});
 
-// Clique geral para som sutil
+document.getElementById('btn-enter-arena').addEventListener('click', () => {
+  playSFX(sfxClick);
+  enterArena();
+});
+
+document.getElementById('btn-spin').addEventListener('click', doSpin);
+document.getElementById('music-toggle').addEventListener('click', toggleMusic);
+document.getElementById('r-btn').addEventListener('click', () => {
+  document.getElementById('result-ovl').classList.remove('on');
+});
+
+// Clique geral
 document.addEventListener('click', (e) => {
-  if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-    playSFX(sfxClick);
-  }
+  if (e.target.tagName === 'BUTTON') playSFX(sfxClick);
 }, true);
 
 // ====================== INIT ======================
-window.addEventListener('load', async () => {
+window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('s-load').classList.remove('active');
     showScreen('s-connect');
-    // ... seu código de reconexão da Phantom ...
-  }, 2200);
+  }, 1800);
 });
-
-// Mantenha todas as outras funções e listeners que você já tinha (connectWallet, signAuth, etc.)
-
 </script>
 </body>
 </html>
