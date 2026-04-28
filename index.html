@@ -1115,7 +1115,125 @@ document.getElementById('btn-enter-arena').addEventListener('click', enterArenaF
 document.getElementById('btn-spin').addEventListener('click', doSpin);
 document.getElementById('r-btn').addEventListener('click', closeResult);
 </script>
-</body>
+  <!-- COLE ISSO NO FINAL DO SEU HTML, ANTES DO </body> -->
+
+<!-- 🎵 Música ambiente -->
+<audio id="bg-music" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6f4f8c3d6f.mp3?filename=mysterious-ambient-11785.mp3" type="audio/mpeg">
+</audio>
+
+<!-- 🔊 Efeitos -->
+<audio id="sfx-spin">
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_5b8c4d5f6d.mp3?filename=whoosh-6316.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="sfx-win">
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b6f4b2e3.mp3?filename=success-1-6297.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="sfx-lose">
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2f3d3e4c8b.mp3?filename=error-126627.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// ===== AUDIO =====
+const music = document.getElementById('bg-music');
+const sfxSpin = document.getElementById('sfx-spin');
+const sfxWin = document.getElementById('sfx-win');
+const sfxLose = document.getElementById('sfx-lose');
+
+music.volume = 0.4;
+
+// ===== MOD 1: ENTER ARENA =====
+function enterArenaFn(){
+  const soul = S.soul || {};
+  setText('tb-hash',  soul.soulhash || S.soulhash || '—');
+  setText('tb-lvl',   soul.level || 1);
+  setText('hash-val', soul.hash_balance ?? 100);
+  setText('gem-val',  soul.gems ?? 0);
+  buildGrid();
+  buildPips(soul.energy??7, soul.maxEnergy??10);
+  buildYourCards(soul.ownedCards??{});
+  updateDim(soul.dimProgress??0);
+  showScreen('s-arena');
+
+  // ▶️ TOCA MÚSICA
+  music.currentTime = 0;
+  music.play().catch(()=>{});
+}
+
+// ===== MOD 2: SPIN =====
+async function doSpin(){
+  if(S.spinning) return;
+  const soul=S.soul||{};
+  if((soul.energy??7)<=0){ toast('Sem energia da alma!'); return; }
+
+  // 🔊 SOM DO SPIN
+  sfxSpin.currentTime = 0;
+  sfxSpin.play().catch(()=>{});
+
+  S.spinning=true;
+  document.getElementById('btn-spin').disabled=true;
+
+  try {
+    let data;
+
+    try {
+      const res=await fetch(`${API}/choice`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ wallet:S.wallet, choice:'spin' }),
+      });
+
+      if(res.ok){
+        const apiData=await res.json();
+        const localResult=computeLocalSpin();
+
+        data={
+          result: localResult,
+          hash_balance: (soul.hash_balance??100)+(localResult.isWin?localResult.reward:0),
+          energy: Math.max(0,(soul.energy??7)-1),
+          maxEnergy: soul.maxEnergy??10,
+          stats:{...(soul.stats||{}), xp:(soul.stats?.xp||0)+(localResult.isWin?40:10)},
+          level: soul.level??1,
+          dimProgress:(soul.dimProgress??0)+25+(localResult.isWin?50:0),
+          phasePassed: localResult.isWin,
+          ownedCards: soul.ownedCards??{}
+        };
+      } else {
+        data=computeFullSpin(soul);
+      }
+
+    } catch(e){
+      data=computeFullSpin(soul);
+    }
+
+    const result=data.result;
+    Object.assign(S.soul,data);
+
+    await animateSpin(result.grid);
+    renderGrid(result.grid);
+
+    // 🔊 SOM RESULTADO
+    if(result.isWin){
+      sfxWin.currentTime = 0;
+      sfxWin.play().catch(()=>{});
+    } else {
+      sfxLose.currentTime = 0;
+      sfxLose.play().catch(()=>{});
+    }
+
+    updateHUD();
+    showResult(result,data);
+
+  } catch(e){
+    toast('Erro: '+sanitize(e.message));
+  } finally {
+    S.spinning=false;
+    document.getElementById('btn-spin').disabled=false;
+  }
+}
+</script> </body>
 </html>
 
 
