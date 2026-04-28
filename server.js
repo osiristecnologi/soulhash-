@@ -1,5 +1,5 @@
-console.log("HMAC:", process.env.HMAC_SECRET ? "OK" : "MISSING");/**
- * SOULHASH v2 — Backend Seguro
+
+ 
  * SoulHash gerado IMEDIATAMENTE ao conectar wallet
  * Formato: WALLET_PREFIX — HASH_SUFFIX (vinculado e único)
  *
