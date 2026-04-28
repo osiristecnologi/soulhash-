@@ -27,7 +27,7 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 .screen.active{display:flex}
 
 /* ═══ LOADING ═══════════════════════════════════════ */
-#s-load{align-items:center;justify-content:center;flex-direction:column;gap:22px;transition:opacity .5s}
+#s-load{align-items:center;justify-content:center;flex-direction:column;gap:22px}
 .load-rune{font-size:52px;color:var(--gold);animation:spin 4s linear infinite;display:inline-block;text-shadow:0 0 40px var(--gold)}
 .load-title{font-family:'Cinzel Decorative',serif;font-size:clamp(18px,4vw,34px);color:var(--gold);letter-spacing:3px;text-shadow:0 0 30px rgba(201,162,39,.4)}
 .load-sub{font-family:'Cinzel',serif;font-size:9px;letter-spacing:8px;color:var(--text-d);animation:blink 2s ease-in-out infinite}
@@ -718,7 +718,7 @@ async function doLogin(nonce, signature){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ wallet:S.wallet, signature, nonce }),
     });
-    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.error||`HTTP ${res.status}`); }
+    if(!res.ok){ const e=await res.json().catch(()=>({}))); throw new Error(e.error||`HTTP ${res.status}`); }
 
     const data = await res.json();
     S.sessionToken = data.sessionToken; // RAM only
@@ -991,13 +991,8 @@ function closeResult(){
 // ── INIT ────────────────────────────────────────────────
 window.addEventListener('load',async()=>{
   setTimeout(async()=>{
-    const loadEl = document.getElementById('s-load');
-    loadEl.style.opacity = '0';
-    loadEl.style.pointerEvents = 'none';
-    setTimeout(() => {
-      loadEl.classList.remove('active');
-      showScreen('s-connect');
-    }, 500);
+    document.getElementById('s-load').classList.remove('active');
+    showScreen('s-connect');
 
     // Tenta reconectar wallet automaticamente
     try {
@@ -1013,7 +1008,7 @@ window.addEventListener('load',async()=>{
         await previewHash(S.wallet, short);
       }
     } catch(e){}
-  }, 1400);
+  }, 2200);
 });
 
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
@@ -1027,6 +1022,7 @@ document.getElementById('r-btn').addEventListener('click', closeResult);
 </script>
 </body>
 </html>
+
 
 
 
