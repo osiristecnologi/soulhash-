@@ -329,7 +329,23 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
         </div>
         CONECTAR PHANTOM WALLET
       </button>
+      <button onclick="connectWallet()">Conectar Phantom</button>
+<p id="wallet"></p>
 
+<script>
+async function connectWallet() {
+  try {
+    const resp = await window.solana.connect();
+    const wallet = resp.publicKey.toString();
+
+    document.getElementById("wallet").innerText = wallet;
+
+    gerarAI(wallet);
+  } catch (err) {
+    alert("Erro ao conectar Phantom");
+  }
+}
+</script>
       <!-- Wallet pill -->
       <div class="wallet-pill" id="wallet-pill">
         <div class="wp-dot"></div>
