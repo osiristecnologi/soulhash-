@@ -1,5 +1,5 @@
 <script>
-const API_URL = "https://SEU-BACKEND.onrender.com";
+const API_URL = "https://soulhash-api.onrender.com";
 
 async function login() {
   const wallet = document.getElementById("wallet").value;
