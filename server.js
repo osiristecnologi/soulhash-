@@ -1,37 +1,38 @@
 /**
- * SOULHASH — Backend Web3 Seguro
- * Autenticação via assinatura de wallet (EIP-191 / personal_sign)
- * ethers.js + Express + rate limit
+ * SOULHASH — Backend Web3 (PHANTOM / SOLANA)
+ * Autenticação via assinatura Solana (Phantom Wallet)
  */
 
 require('dotenv').config();
-const express   = require('express');
-const cors      = require('cors');
-const helmet    = require('helmet');
-const crypto    = require('crypto');
-const { ethers } = require('ethers');
 
-const app  = express();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const crypto = require('crypto');
+const nacl = require('tweetnacl');
+const bs58 = require('bs58');
+const { PublicKey } = require('@solana/web3.js');
+
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─────────────────────────────────────────────────────────────
-// STORAGE EM MEMÓRIA
-// ─────────────────────────────────────────────────────────────
-const nonceStore   = new Map(); // wallet → { nonce, expiresAt }
-const soulhashStore = new Map(); // wallet → soulhash
+// ─────────────────────────────
+// STORAGE
+// ─────────────────────────────
+const nonceStore = new Map();
+const soulhashStore = new Map();
 
-// ─────────────────────────────────────────────────────────────
-// RATE LIMIT SIMPLES (máx 5 req/min por IP)
-// ─────────────────────────────────────────────────────────────
-const ipRequests = new Map(); // ip → { count, resetAt }
+// ─────────────────────────────
+// RATE LIMIT SIMPLES
+// ─────────────────────────────
+const ipRequests = new Map();
 
 function rateLimit(req, res, next) {
-  const ip    = req.ip || req.connection.remoteAddress || 'unknown';
-  const now   = Date.now();
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const now = Date.now();
   const entry = ipRequests.get(ip);
 
   if (!entry || now > entry.resetAt) {
-    // Nova janela de 1 minuto
     ipRequests.set(ip, { count: 1, resetAt: now + 60_000 });
     return next();
   }
@@ -39,7 +40,6 @@ function rateLimit(req, res, next) {
   if (entry.count >= 5) {
     return res.status(429).json({
       error: 'Muitas requisições. Aguarde 1 minuto.',
-      retryAfter: Math.ceil((entry.resetAt - now) / 1000),
     });
   }
 
@@ -47,7 +47,7 @@ function rateLimit(req, res, next) {
   next();
 }
 
-// Limpa entradas expiradas a cada 5 min
+// limpeza
 setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of ipRequests) {
@@ -58,303 +58,197 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
-// ─────────────────────────────────────────────────────────────
-// MIDDLEWARES
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────
+// MIDDLEWARE
+// ─────────────────────────────
 app.use(helmet());
-app.use(cors({
-  origin:  process.env.ALLOWED_ORIGIN || '*',
-  methods: ['GET', 'POST'],
-}));
+app.use(cors({ origin: '*'}));
 app.use(express.json({ limit: '10kb' }));
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────
 // UTILITÁRIOS
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────
 
-/**
- * Valida endereço Ethereum (EIP-55 checksum)
- */
-function isValidAddress(address) {
+function isValidSolanaAddress(address) {
   try {
-    return typeof address === 'string' && ethers.isAddress(address);
+    new PublicKey(address);
+    return true;
   } catch {
     return false;
   }
 }
 
-/**
- * Gera nonce aleatório único (hex 32 bytes)
- */
 function generateNonce() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-/**
- * Gera SoulHash fixo e determinístico vinculado à wallet
- * sha256(wallet + "SOULHASH-V2").slice(0, 24)
- * Normaliza para lowercase para consistência
- */
+function buildMessage(nonce) {
+  return `Login SoulHash (Solana) - nonce: ${nonce}`;
+}
+
 function generateSoulHash(wallet) {
-  const normalized = wallet.toLowerCase();
   const hash = crypto
     .createHash('sha256')
-    .update(normalized + 'SOULHASH-V2')
+    .update(wallet.toLowerCase() + 'SOULHASH-SOLANA')
     .digest('hex');
+
   return hash.slice(0, 24).toUpperCase();
 }
 
-/**
- * Constrói a mensagem de login no padrão EIP-191
- * personal_sign assina: "\x19Ethereum Signed Message:\n" + len + message
- */
-function buildLoginMessage(nonce) {
-  return `Login SoulHash - nonce: ${nonce}`;
-}
-
-/**
- * Verifica assinatura EIP-191 via ethers.verifyMessage
- * Recupera o endereço que gerou a assinatura e compara com o wallet informado
- */
-function verifySignature(wallet, message, signature) {
+// ─────────────────────────────
+// VERIFY PHANTOM SIGNATURE
+// ─────────────────────────────
+function verifySignatureSolana(publicKey, message, signature) {
   try {
-    const recovered = ethers.verifyMessage(message, signature);
-    // Comparação case-insensitive (endereços Ethereum podem vir em casos diferentes)
-    return recovered.toLowerCase() === wallet.toLowerCase();
+    const messageBytes = new TextEncoder().encode(message);
+    const signatureBytes = bs58.decode(signature);
+    const publicKeyBytes = bs58.decode(publicKey);
+
+    return nacl.sign.detached.verify(
+      messageBytes,
+      signatureBytes,
+      publicKeyBytes
+    );
   } catch {
     return false;
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// ROTAS
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────
+// DERIVADOR DE ATRIBUTOS
+// ─────────────────────────────
+function deriveAttr(soulhash, index) {
+  const hash = crypto.createHash('sha256').update(soulhash).digest('hex');
+  const vals = [0, 4, 8, 12, 16].map(i => parseInt(hash.slice(i, i + 4), 16));
+  const raw = vals.map(v => 15 + (v % 36));
+  const sum = raw.reduce((a, b) => a + b, 0);
+  return Math.round((raw[index] / sum) * 180);
+}
 
-/**
- * GET /health
- * Verifica se a API está online
- */
+// ─────────────────────────────
+// ROTAS
+// ─────────────────────────────
+
 app.get('/health', (req, res) => {
-  res.json({ status: 'online', timestamp: new Date().toISOString() });
+  res.json({ status: 'online', chain: 'solana' });
 });
 
 /**
- * POST /challenge
- * Recebe:  { wallet }
- * Retorna: { message, nonce }
- *
- * Gera um nonce único para a wallet assinar.
- * O nonce expira em 5 minutos.
+ * CHALLENGE
  */
 app.post('/challenge', rateLimit, (req, res) => {
   const { wallet } = req.body;
 
-  // Validação
-  if (!wallet || typeof wallet !== 'string') {
-    return res.status(400).json({ error: 'Campo wallet é obrigatório.' });
+  if (!wallet || !isValidSolanaAddress(wallet)) {
+    return res.status(400).json({ error: 'Wallet Solana inválida' });
   }
 
-  if (!isValidAddress(wallet)) {
-    return res.status(400).json({ error: 'Endereço de wallet inválido.' });
-  }
+  const nonce = generateNonce();
+  const message = buildMessage(nonce);
 
-  // Gera nonce e mensagem
-  const nonce   = generateNonce();
-  const message = buildLoginMessage(nonce);
-
-  // Salva nonce com expiração de 5 minutos
-  nonceStore.set(wallet.toLowerCase(), {
+  nonceStore.set(wallet, {
     nonce,
+    message,
     expiresAt: Date.now() + 5 * 60_000,
   });
 
-  return res.json({ message, nonce });
+  res.json({ message, nonce });
 });
 
 /**
- * POST /verify
- * Recebe:  { wallet, signature, message }
- * Retorna: { soulhash, wallet, isNew }
- *
- * Verifica a assinatura EIP-191.
- * Se válida: retorna (ou cria) o SoulHash vinculado à wallet.
+ * VERIFY PHANTOM
  */
 app.post('/verify', rateLimit, (req, res) => {
   const { wallet, signature, message } = req.body;
 
-  // Validação dos campos
   if (!wallet || !signature || !message) {
-    return res.status(400).json({
-      error: 'Campos obrigatórios: wallet, signature, message.',
-    });
+    return res.status(400).json({ error: 'Campos obrigatórios' });
   }
 
-  if (!isValidAddress(wallet)) {
-    return res.status(400).json({ error: 'Endereço de wallet inválido.' });
+  if (!isValidSolanaAddress(wallet)) {
+    return res.status(400).json({ error: 'Wallet inválida' });
   }
 
-  if (typeof signature !== 'string' || signature.length < 100) {
-    return res.status(400).json({ error: 'Assinatura inválida.' });
-  }
-
-  // Verifica se existe nonce válido para esta wallet
-  const walletKey = wallet.toLowerCase();
-  const stored    = nonceStore.get(walletKey);
+  const stored = nonceStore.get(wallet);
 
   if (!stored) {
-    return res.status(401).json({
-      error: 'Nonce não encontrado. Solicite um novo desafio via /challenge.',
-    });
+    return res.status(401).json({ error: 'Nonce não encontrado' });
   }
 
-  if (Date.now() > stored.expiresAt) {
-    nonceStore.delete(walletKey);
-    return res.status(401).json({
-      error: 'Nonce expirado. Solicite um novo desafio via /challenge.',
-    });
+  if (stored.message !== message) {
+    return res.status(401).json({ error: 'Mensagem inválida' });
   }
 
-  // Confirma que a mensagem recebida contém o nonce correto
-  const expectedMessage = buildLoginMessage(stored.nonce);
-  if (message !== expectedMessage) {
-    return res.status(401).json({
-      error: 'Mensagem não corresponde ao desafio emitido.',
-    });
-  }
-
-  // Verifica assinatura com ethers.verifyMessage (EIP-191)
-  const valid = verifySignature(wallet, message, signature);
+  const valid = verifySignatureSolana(wallet, message, signature);
 
   if (!valid) {
-    return res.status(401).json({
-      error: 'Assinatura inválida. A assinatura não pertence a esta wallet.',
-    });
+    return res.status(401).json({ error: 'Assinatura inválida' });
   }
 
-  // Consome o nonce (não pode ser reutilizado)
-  nonceStore.delete(walletKey);
+  nonceStore.delete(wallet);
 
-  // Verifica se já existe SoulHash para esta wallet
-  const isNew = !soulhashStore.has(walletKey);
+  let isNew = !soulhashStore.has(wallet);
 
   if (isNew) {
-    // Gera e salva SoulHash determinístico vinculado à wallet
-    const soulhash = generateSoulHash(wallet);
-    soulhashStore.set(walletKey, soulhash);
+    soulhashStore.set(wallet, generateSoulHash(wallet));
   }
 
-  const soulhash = soulhashStore.get(walletKey);
+  const soulhash = soulhashStore.get(wallet);
 
-  return res.json({
-    ok:       true,
+  res.json({
+    ok: true,
+    wallet,
     soulhash,
-    wallet:   walletKey,
     isNew,
-    message:  isNew
-      ? '✦ SoulHash criado e vinculado à sua wallet.'
-      : '✦ SoulHash existente recuperado.',
+    message: isNew
+      ? 'SoulHash criado via Phantom'
+      : 'SoulHash recuperado'
   });
 });
 
 /**
- * POST /login (compatibilidade com frontend anterior)
- * Atalho que aceita apenas { wallet } sem assinatura
- * Usado quando /nonce não está disponível no cliente
+ * LOGIN SIMPLES
  */
 app.post('/login', rateLimit, (req, res) => {
   const { wallet } = req.body;
 
-  if (!wallet || !isValidAddress(wallet)) {
-    return res.status(400).json({ error: 'Wallet inválida.' });
+  if (!wallet || !isValidSolanaAddress(wallet)) {
+    return res.status(400).json({ error: 'Wallet inválida' });
   }
 
-  const walletKey = wallet.toLowerCase();
-  const isNew     = !soulhashStore.has(walletKey);
-
-  if (isNew) {
-    soulhashStore.set(walletKey, generateSoulHash(wallet));
+  if (!soulhashStore.has(wallet)) {
+    soulhashStore.set(wallet, generateSoulHash(wallet));
   }
 
-  const soulhash = soulhashStore.get(walletKey);
+  const soulhash = soulhashStore.get(wallet);
 
-  return res.json({
-    ok:       true,
+  res.json({
+    ok: true,
+    wallet,
     soulhash,
-    wallet:   walletKey,
-    isNew,
-    // Atributos iniciais da alma (derivados do soulhash)
-    luz:        deriveAttr(soulhash, 0),
-    sombra:     deriveAttr(soulhash, 1),
+    luz: deriveAttr(soulhash, 0),
+    sombra: deriveAttr(soulhash, 1),
     equilibrio: deriveAttr(soulhash, 2),
-    caos:       deriveAttr(soulhash, 3),
-    empatia:    deriveAttr(soulhash, 4),
-    hash_balance: 100, // bônus de entrada
-    energy:     7,
-    maxEnergy:  10,
-    level:      1,
+    caos: deriveAttr(soulhash, 3),
+    empatia: deriveAttr(soulhash, 4),
+    energy: 7,
+    maxEnergy: 10,
+    level: 1
   });
 });
 
-/**
- * POST /choice
- * Recebe: { wallet, choice }
- * Retorna atributos atualizados conforme a escolha
- */
-app.post('/choice', rateLimit, (req, res) => {
-  const { wallet, choice } = req.body;
-
-  if (!wallet || !isValidAddress(wallet)) {
-    return res.status(400).json({ error: 'Wallet inválida.' });
-  }
-
-  const walletKey = wallet.toLowerCase();
-  if (!soulhashStore.has(walletKey)) {
-    return res.status(404).json({ error: 'Alma não encontrada. Faça login primeiro.' });
-  }
-
-  const VALID_CHOICES = ['light','shadow','balance','spin','coragem','sabedoria','empatia'];
-  if (!VALID_CHOICES.includes(choice)) {
-    return res.status(400).json({ error: `Escolha inválida. Opções: ${VALID_CHOICES.join(', ')}` });
-  }
-
-  // Retorna confirmação (lógica de atributos pode ser expandida com DB)
-  return res.json({
-    ok:     true,
-    choice,
-    wallet: walletKey,
-    message: `Escolha '${choice}' registrada com sucesso.`,
-  });
-});
-
-// ─────────────────────────────────────────────────────────────
-// UTILITÁRIO — Deriva atributos da alma a partir do SoulHash
-// ─────────────────────────────────────────────────────────────
-function deriveAttr(soulhash, index) {
-  const hash = crypto.createHash('sha256').update(soulhash).digest('hex');
-  const vals = [0, 4, 8, 12, 16].map(i => parseInt(hash.slice(i, i + 4), 16));
-  const raw  = vals.map(v => 15 + (v % 36));
-  const sum  = raw.reduce((a, b) => a + b, 0);
-  return Math.round((raw[index] / sum) * 180);
-}
-
-// ─────────────────────────────────────────────────────────────
-// 404 handler
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────
+// 404
+// ─────────────────────────────
 app.use((req, res) => {
-  res.status(404).json({ error: `Rota ${req.method} ${req.path} não encontrada.` });
+  res.status(404).json({ error: 'Rota não encontrada' });
 });
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────
 // START
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────
 app.listen(PORT, () => {
-  console.log(`\n[SoulHash API] ✦ Servidor rodando na porta ${PORT}`);
-  console.log(`[SoulHash API] Rotas disponíveis:`);
-  console.log(`  GET  /health`);
-  console.log(`  POST /challenge  → gera nonce para assinatura`);
-  console.log(`  POST /verify     → valida assinatura EIP-191`);
-  console.log(`  POST /login      → login simplificado`);
-  console.log(`  POST /choice     → registra escolha\n`);
+  console.log(`SoulHash Solana rodando na porta ${PORT}`);
 });
 
 
