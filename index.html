@@ -628,16 +628,21 @@ async function signAndLogin(){
     toast('✦ Identidade confirmada!');
     setTimeout(()=> enterUniverse(), 800);
   } catch(e){
-    if(e.message?.toLowerCase().includes('rejected') || e.message?.toLowerCase().includes('cancel')){
-      setStatus('Assinatura cancelada pelo usuário.','warn');
-    } else {
-      await loginSimple();
-      return;
-    }
-    btn.disabled=false;
-    btn.textContent='✍ ASSINAR MENSAGEM';
-    setStep(2);
+  const msg = (e.message || '').toLowerCase();
+
+  if (msg.includes('rejected') || msg.includes('cancel')) {
+    setStatus('Assinatura cancelada pelo usuário.','warn');
+  } else {
+    setStatus('Erro na verificação. Tente novamente.','error');
   }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '✍ ASSINAR MENSAGEM';
+  }
+
+  setStep(2);
+}
 }
 
 async function loginSimple(){
