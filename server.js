@@ -23,12 +23,13 @@ app.use(
 );
 
 // ─────────────────────────────
-// MEMORY STORE (simples)
-const challenges = new Map();
-const sessions = new Map();
-const soulhashStore = new Map();
+// MEMORY STORE (Map usado corretamente)
+// ─────────────────────────────
+const challenges = new Map(); // wallet → challenge
+const sessions = new Map();   // token → wallet
 
-// cards fake (exemplo)
+// ─────────────────────────────
+// CARDS (game)
 const CARDS = ["fire", "water", "earth", "air"];
 
 // ─────────────────────────────
@@ -37,12 +38,12 @@ app.get("/", (req, res) => {
   res.json({
     status: "ok",
     service: "SoulHash API",
-    version: "v2",
+    version: "v3-refactor",
   });
 });
 
 // ─────────────────────────────
-// CHALLENGE (wallet login)
+// CHALLENGE
 app.post("/challenge", (req, res) => {
   const { wallet } = req.body;
 
@@ -62,6 +63,7 @@ app.post("/challenge", (req, res) => {
 
 // ─────────────────────────────
 // VERIFY LOGIN
+// ─────────────────────────────
 app.post("/verify", (req, res) => {
   const { wallet, signature } = req.body;
 
@@ -75,25 +77,29 @@ app.post("/verify", (req, res) => {
     return res.status(400).json({ error: "challenge já usado" });
   }
 
-  // ⚠️ aqui você pode plugar Solana verify depois
-  const valid = Boolean(signature);
-
-  if (!valid) {
+  if (!signature) {
     return res.status(401).json({ error: "assinatura inválida" });
   }
 
   entry.used = true;
 
-  if (!soulhashStore.has(wallet)) {
-    soulhashStore.set(wallet, crypto.randomBytes(16).toString("hex"));
-  }
+  // ─────────────────────────────
+  // 🔐 SOULHASH FIXO POR WALLET (CORRETO)
+  // ─────────────────────────────
+  const soulhash = crypto
+    .createHash("sha256")
+    .update(wallet.trim().toLowerCase())
+    .digest("hex");
 
+  // ─────────────────────────────
+  // SESSION TOKEN
+  // ─────────────────────────────
   const token = crypto.randomBytes(24).toString("hex");
   sessions.set(token, wallet);
 
   res.json({
     sessionToken: token,
-    soulhash: soulhashStore.get(wallet),
+    soulhash: soulhash,
     level: 1,
     hash_balance: 100,
     energy: 7,
@@ -108,6 +114,7 @@ app.post("/verify", (req, res) => {
 
 // ─────────────────────────────
 // SPIN GAME
+// ─────────────────────────────
 app.post("/spin", (req, res) => {
   const token = req.headers["x-session-token"];
   const wallet = sessions.get(token);
