@@ -453,119 +453,95 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 <script>
 const API = 'https://soulhash-api.onrender.com';
 
+// ─── Estado ───────────────────────────────────────────────
 const S = {
-  wallet:   null,
-  soulhash: null,
-  soul:     null,
-  spinning: false,
+  wallet:       null,   // endereço base58
+  soulhash:     null,   // recebido do /verify
+  sessionToken: null,   // ★ FIX 4: salvo em RAM, enviado ao /spin
+  soul:         null,
+  spinning:     false,
 };
 
+// ─── Canvas BG ────────────────────────────────────────────
 (function(){
-  const c = document.getElementById('bgc'), ctx = c.getContext('2d');
-  const stars = [];
-  function resize(){ c.width=innerWidth; c.height=innerHeight; }
-  resize(); addEventListener('resize', resize);
-  for(let i=0;i<120;i++) stars.push({
-    x:Math.random(), y:Math.random(),
-    r:Math.random()*1.2+.2, a:Math.random(),
-    da:(Math.random()*.004+.001)*(Math.random()>.5?1:-1),
-    col:Math.random()>.85?'#c9a227':Math.random()>.7?'#8b5cf6':'#fff'
-  });
-  function draw(){
-    ctx.clearRect(0,0,c.width,c.height);
-    stars.forEach(s=>{
-      s.a=Math.max(.05,Math.min(.85,s.a+s.da));
-      if(s.a<=.05||s.a>=.85) s.da*=-1;
-      ctx.beginPath(); ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);
-      ctx.fillStyle=s.col; ctx.globalAlpha=s.a; ctx.fill();
-    });
-    ctx.globalAlpha=1; requestAnimationFrame(draw);
-  }
+  const c=document.getElementById('bgc'),ctx=c.getContext('2d'),stars=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  resize(); addEventListener('resize',resize);
+  for(let i=0;i<120;i++) stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.2+.2,a:Math.random(),da:(Math.random()*.004+.001)*(Math.random()>.5?1:-1),col:Math.random()>.85?'#c9a227':Math.random()>.7?'#8b5cf6':'#fff'});
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(.05,Math.min(.85,s.a+s.da));if(s.a<=.05||s.a>=.85)s.da*=-1;ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);ctx.fillStyle=s.col;ctx.globalAlpha=s.a;ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
   draw();
 })();
 
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  scrollTo(0,0);
-}
-function setStep(n){
-  [1,2,3].forEach(i=>{
-    const d=document.getElementById('sd'+i);
-    if(d) d.className='step-dot'+(i<n?' done':i===n?' active':'');
-  });
-}
-function setStatus(msg, type='info'){
-  const el=document.getElementById('status-box');
-  el.textContent=msg;
-  el.className='status-box '+type;
-  el.style.display=msg?'block':'none';
-}
+// ─── UI ───────────────────────────────────────────────────
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0);}
+function setStep(n){[1,2,3].forEach(i=>{const d=document.getElementById('sd'+i);if(d)d.className='step-dot'+(i<n?' done':i===n?' active':'');});}
+function setStatus(msg,type='info'){const el=document.getElementById('status-box');el.textContent=msg;el.className='status-box '+type;el.style.display=msg?'block':'none';}
 let _tt;
-function toast(msg){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
-  clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('show'),3200);
-}
-function setText(id,val){
-  const el=document.getElementById(id);
-  if(el) el.textContent=String(val);
-}
-function sanitize(s){
-  return typeof s==='string'?s.replace(/[<>&"']/g,'').slice(0,160):'Erro';
-}
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),3200);}
+function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=String(val);}
+function sanitize(s){return typeof s==='string'?s.replace(/[<>&"']/g,'').slice(0,160):'Erro';}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
+// Uint8Array → Base58
 function toBase58(bytes){
   const A='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   let d=[0];
-  for(let i=0;i<bytes.length;i++){
-    let carry=bytes[i];
-    for(let j=0;j<d.length;j++){carry+=d[j]<<8;d[j]=carry%58;carry=(carry/58)|0;}
-    while(carry>0){d.push(carry%58);carry=(carry/58)|0;}
-  }
-  let r='';
-  for(let i=0;i<bytes.length&&bytes[i]===0;i++) r+='1';
-  for(let i=d.length-1;i>=0;i--) r+=A[d[i]];
-  return r;
+  for(let i=0;i<bytes.length;i++){let c=bytes[i];for(let j=0;j<d.length;j++){c+=d[j]<<8;d[j]=c%58;c=(c/58)|0;}while(c>0){d.push(c%58);c=(c/58)|0;}}
+  let r='';for(let i=0;i<bytes.length&&bytes[i]===0;i++)r+='1';for(let i=d.length-1;i>=0;i--)r+=A[d[i]];return r;
 }
 
-const CARDS = [
+// ─── Cards ────────────────────────────────────────────────
+// ★ FIX 5: mapeamento inclui os IDs do servidor (fire/water/earth/air)
+//           E os IDs visuais do frontend (luz/sombra/caos/empatia/equil)
+//           Qualquer ID desconhecido cai no fallback
+const CARDS=[
   {id:'luz',    name:'LUZ',        emoji:'☀️', cls:'card-luz'    },
   {id:'sombra', name:'SOMBRA',     emoji:'🌑', cls:'card-sombra' },
   {id:'caos',   name:'CAOS',       emoji:'🔥', cls:'card-caos'   },
   {id:'empatia',name:'EMPATIA',    emoji:'💚', cls:'card-empatia'},
   {id:'equil',  name:'EQUILÍBRIO', emoji:'⚖️', cls:'card-equil'  },
 ];
-const CARD_MAP = Object.fromEntries(CARDS.map(c=>[c.id,c]));
-const EPIC_CARDS = [
+
+// Mapa expandido: aceita IDs do servidor E IDs visuais
+const CARD_MAP = {
+  // IDs visuais do frontend
+  luz:     CARDS[0], sombra:  CARDS[1],
+  caos:    CARDS[2], empatia: CARDS[3], equil: CARDS[4],
+  // ★ IDs do servidor (fire/water/earth/air) → mapeados para visual
+  fire:    CARDS[2], // caos
+  water:   CARDS[0], // luz
+  earth:   CARDS[4], // equil
+  air:     CARDS[3], // empatia
+};
+
+const EPIC_CARDS=[
   {emoji:'🌑',name:'Sombra Abissal',stats:'Dano +35% · Crítico +20% · 3 Turnos'},
   {emoji:'☀️',name:'Luz Divina',    stats:'Cura +50% · Escudo +30% · 4 Turnos'},
   {emoji:'🔥',name:'Caos Infernal', stats:'Área +40% · Crítico +15% · 2 Turnos'},
   {emoji:'💚',name:'Empatia Épica', stats:'Suporte +60% · 5 Turnos'},
-  {emoji:'⚖️',name:'Equilíbrio Perfeito', stats:'Defesa +45% · Resist +35% · 4 Turnos'},
+  {emoji:'⚖️',name:'Equilíbrio Perfeito',stats:'Defesa +45% · Resist +35% · 4 Turnos'},
 ];
-const COMBO_LABELS = {
-  '3linha':'TRÍADE SAGRADA','diagonal':'DIAGONAL COMPLETA',
-  'cruz':'ALMA RARA','todos':'TRÍADE DAS SOMBRAS','none':''
-};
+const COMBO_LABELS={'3linha':'TRÍADE SAGRADA','diagonal':'DIAGONAL COMPLETA','cruz':'ALMA RARA','todos':'TRÍADE DAS SOMBRAS','none':''};
 
+// ═══════════════════════════════════════════════════════════
+//  PASSO 1 — Conectar Phantom
+// ═══════════════════════════════════════════════════════════
 async function connectWallet(){
-  const phantom = window.phantom?.solana ?? window.solana;
+  const phantom=window.phantom?.solana??window.solana;
   if(!phantom?.isPhantom){
-    setStatus('Phantom Wallet não detectada. Instale em phantom.app ou abra no browser da Phantom.','error');
+    setStatus('Phantom Wallet não detectada. Instale em phantom.app.','error');
     return;
   }
-  const btn = document.getElementById('btn-connect');
+  const btn=document.getElementById('btn-connect');
   btn.disabled=true; btn.textContent='CONECTANDO...';
   setStatus('Aguardando aprovação na Phantom...','info');
   try {
-    const resp  = await phantom.connect();
-    S.wallet    = resp.publicKey.toString();
-    const short = S.wallet.slice(0,6)+'...'+S.wallet.slice(-4);
-    const pill  = document.getElementById('wallet-pill');
+    const resp=await phantom.connect();
+    S.wallet=resp.publicKey.toString();
+    const short=S.wallet.slice(0,6)+'...'+S.wallet.slice(-4);
+    const pill=document.getElementById('wallet-pill');
     pill.style.display='flex';
-    setText('wallet-addr-short', '✓ '+short+' conectada');
+    setText('wallet-addr-short','✓ '+short+' conectada');
     btn.textContent='✓ PHANTOM CONECTADA';
     sfxConnect();
     setStep(2);
@@ -578,61 +554,91 @@ async function connectWallet(){
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+//  PASSO 2 — Challenge → SignMessage → Verify
+//
+//  FIX 1: /challenge retorna só { message }, sem nonce
+//  FIX 2: /verify recebe só { wallet, signature }
+//  FIX 4: sessionToken salvo em S.sessionToken
+// ═══════════════════════════════════════════════════════════
 async function signAndLogin(){
-  if(!S.wallet){ toast('Conecte a wallet primeiro'); return; }
-  const btn = document.getElementById('btn-sign');
+  if(!S.wallet){toast('Conecte a wallet primeiro');return;}
+  const btn=document.getElementById('btn-sign');
   btn.disabled=true; btn.textContent='AGUARDE...';
   setStep(2);
+
   try {
-    setStatus('Solicitando desafio de autenticação...','info');
-    const nonceRes = await fetch(`${API}/nonce?wallet=${encodeURIComponent(S.wallet)}`);
-    if(!nonceRes.ok) throw new Error(`Nonce HTTP ${nonceRes.status}`);
-    const { nonce, message } = await nonceRes.json();
-    setStatus('Assine a mensagem na Phantom para confirmar sua identidade...','info');
-    btn.textContent='ASSINAR NA PHANTOM...';
-    const phantom    = window.phantom?.solana ?? window.solana;
-    const encoded    = new TextEncoder().encode(message);
-    const signResult = await phantom.signMessage(encoded, 'utf8');
-    const signature  = toBase58(signResult.signature);
-    setStep(3);
-    setStatus('Verificando e gerando seu SoulHash...','info');
-    btn.textContent='VERIFICANDO...';
-    const loginRes = await fetch(`${API}/login`, {
-      method:  'POST',
-      headers: {'Content-Type':'application/json'},
-      body:    JSON.stringify({ wallet: S.wallet, signature, nonce }),
+    // ── A: POST /challenge ──────────────────────────────
+    // Retorna: { message }  ← servidor não manda nonce
+    setStatus('Solicitando desafio ao servidor...','info');
+    const challengeRes=await fetch(`${API}/challenge`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({wallet:S.wallet}),
     });
-    if(!loginRes.ok){
-      const err = await loginRes.json().catch(()=>({}));
-      throw new Error(err.error || `HTTP ${loginRes.status}`);
+    if(!challengeRes.ok){
+      const err=await challengeRes.json().catch(()=>({}));
+      throw new Error(err.error||`/challenge HTTP ${challengeRes.status}`);
     }
-    const data = await loginRes.json();
-    S.soulhash = data.soulhash;
+    // ★ FIX 1: desestrutura só { message }, sem nonce
+    const {message}=await challengeRes.json();
+    if(!message) throw new Error('Servidor não retornou mensagem de desafio');
+
+    // ── B: phantom.signMessage ──────────────────────────
+    setStatus('Assine a mensagem na Phantom...','info');
+    btn.textContent='ASSINAR NA PHANTOM...';
+    const phantom=window.phantom?.solana??window.solana;
+    const encoded=new TextEncoder().encode(message);
+    const signResult=await phantom.signMessage(encoded,'utf8');
+    const signature=toBase58(signResult.signature);
+
+    // ── C: POST /verify ─────────────────────────────────
+    // ★ FIX 2: envia só { wallet, signature } — sem nonce, sem message
+    setStep(3);
+    setStatus('Verificando assinatura...','info');
+    btn.textContent='VERIFICANDO...';
+    const verifyRes=await fetch(`${API}/verify`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({wallet:S.wallet, signature}),
+    });
+    if(!verifyRes.ok){
+      const err=await verifyRes.json().catch(()=>({}));
+      throw new Error(err.error||`/verify HTTP ${verifyRes.status}`);
+    }
+    const data=await verifyRes.json();
+    if(!data.soulhash) throw new Error('Servidor não retornou soulhash');
+
+    // ── D: Salva estado ─────────────────────────────────
+    // ★ FIX 4: sessionToken salvo em RAM para enviar ao /spin
+    S.soulhash     = data.soulhash;
+    S.sessionToken = data.sessionToken;
     S.soul = {
-      soulhash:     data.soulhash,
-      wallet:       S.wallet,
-      luz:          data.luz         ?? 35,
-      sombra:       data.sombra      ?? 25,
-      equilibrio:   data.equilibrio  ?? 40,
-      caos:         data.caos        ?? 20,
-      empatia:      data.empatia     ?? 60,
-      hash_balance: data.hash_balance ?? 100,
-      energy:       data.energy      ?? 7,
-      maxEnergy:    data.maxEnergy   ?? 10,
-      level:        data.level       ?? 1,
-      stats:        data.stats       ?? {xp:0,missoes:0,escolhas:0,almas:0,confrontos:0},
-      ownedCards:   data.ownedCards  ?? {},
-      dimProgress:  data.dimProgress ?? 0,
+      soulhash:    data.soulhash,
+      wallet:      S.wallet,
+      luz:         35, sombra:25, equilibrio:40, caos:20, empatia:60,
+      hash_balance:data.hash_balance ??100,
+      energy:      data.energy       ??7,
+      maxEnergy:   data.maxEnergy    ??10,
+      level:       data.level        ??1,
+      stats:       data.stats        ??{xp:0},
+      ownedCards:  data.ownedCards   ??{},
+      dimProgress: data.dimProgress  ??0,
+      phasePassed: data.phasePassed  ??false,
+      gems:        data.gems         ??0,
     };
-    setStatus('✦ SoulHash gerado e verificado pelo servidor!','success');
+
+    setStatus('✦ SoulHash verificado e vinculado à sua wallet!','success');
     toast('✦ Identidade confirmada!');
-    setTimeout(()=> enterUniverse(), 800);
+    setTimeout(()=>enterUniverse(),800);
+
   } catch(e){
-    if(e.message?.toLowerCase().includes('rejected') || e.message?.toLowerCase().includes('cancel')){
+    const msg=e.message?.toLowerCase()||'';
+    if(msg.includes('rejected')||msg.includes('cancel')||msg.includes('user rejected')){
       setStatus('Assinatura cancelada pelo usuário.','warn');
     } else {
-      await loginSimple();
-      return;
+      setStatus('Erro: '+sanitize(e.message),'error');
+      console.error('[SoulHash] signAndLogin error:', e);
     }
     btn.disabled=false;
     btn.textContent='✍ ASSINAR MENSAGEM';
@@ -640,204 +646,167 @@ async function signAndLogin(){
   }
 }
 
-async function loginSimple(){
-  const btn = document.getElementById('btn-sign');
-  try {
-    setStatus('Conectando ao servidor...','info');
-    const res = await fetch(`${API}/login`, {
-      method:  'POST',
-      headers: {'Content-Type':'application/json'},
-      body:    JSON.stringify({ wallet: S.wallet }),
-    });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    S.soulhash = data.soulhash;
-    S.soul = {
-      soulhash:     data.soulhash,
-      wallet:       S.wallet,
-      luz:          data.luz         ?? 35,
-      sombra:       data.sombra      ?? 25,
-      equilibrio:   data.equilibrio  ?? 40,
-      caos:         data.caos        ?? 20,
-      empatia:      data.empatia     ?? 60,
-      hash_balance: data.hash_balance ?? 100,
-      energy:       data.energy      ?? 7,
-      maxEnergy:    data.maxEnergy   ?? 10,
-      level:        data.level       ?? 1,
-      stats:        data.stats       ?? {xp:0,missoes:0,escolhas:0,almas:0,confrontos:0},
-      ownedCards:   data.ownedCards  ?? {},
-      dimProgress:  data.dimProgress ?? 0,
-    };
-    setStatus('✦ SoulHash gerado pelo servidor!','success');
-    setTimeout(()=> enterUniverse(), 800);
-  } catch(e){
-    setStatus('Erro ao conectar com a API: '+sanitize(e.message),'error');
-    btn.disabled=false;
-    btn.textContent='✍ ASSINAR MENSAGEM';
-    setStep(2);
-  }
-}
-
+// ─── Welcome ──────────────────────────────────────────────
 function enterUniverse(){
   sfxButton();
-  const short = S.wallet ? S.wallet.slice(0,6)+'...'+S.wallet.slice(-4) : '—';
-  setText('bhd-hash',   S.soulhash || '—');
-  setText('bhd-wallet', short+' · Autenticado ✓');
+  const short=S.wallet?S.wallet.slice(0,6)+'...'+S.wallet.slice(-4):'—';
+  setText('bhd-hash',  S.soulhash||'—');
+  setText('bhd-wallet',short+' · Autenticado ✓');
   showScreen('s-welcome');
   toast('✦ +100 Hash creditados! Bem-vindo ao Universo.');
 }
 
+// ─── Arena ────────────────────────────────────────────────
 function enterArenaFn(){
-  const soul = S.soul || {};
-  setText('tb-hash',  soul.soulhash || S.soulhash || '—');
-  setText('tb-lvl',   soul.level || 1);
-  setText('hash-val', soul.hash_balance ?? 100);
-  setText('gem-val',  soul.gems ?? 0);
+  const soul=S.soul||{};
+  setText('tb-hash', soul.soulhash||S.soulhash||'—');
+  setText('tb-lvl',  soul.level||1);
+  setText('hash-val',soul.hash_balance??100);
+  setText('gem-val', soul.gems??0);
   buildGrid();
-  buildPips(soul.energy??7, soul.maxEnergy??10);
+  buildPips(soul.energy??7,soul.maxEnergy??10);
   buildYourCards(soul.ownedCards??{});
   updateDim(soul.dimProgress??0);
   showScreen('s-arena');
 }
 
-function makeCardEl(card, i){
-  const el = document.createElement('div');
-  el.className=`arena-card ${card.cls}`;
-  el.id=`card-${i}`;
+// ─── Grid ─────────────────────────────────────────────────
+function makeCardEl(card,i){
+  const el=document.createElement('div');
+  el.className=`arena-card ${card.cls}`; el.id=`card-${i}`;
   const glow=document.createElement('div'); glow.className='card-glow';
-  const art =document.createElement('div'); art.className='card-art'; art.textContent=card.emoji;
+  const art=document.createElement('div');  art.className='card-art';  art.textContent=card.emoji;
   const name=document.createElement('div'); name.className='card-name'; name.textContent=card.name;
-  ['tl','tr','bl','br'].forEach(p=>{
-    const corner=document.createElement('span');
-    corner.className=`card-corner ${p}`; corner.textContent='✦'; el.appendChild(corner);
-  });
-  el.appendChild(glow); el.appendChild(art); el.appendChild(name);
+  ['tl','tr','bl','br'].forEach(p=>{const c=document.createElement('span');c.className=`card-corner ${p}`;c.textContent='✦';el.appendChild(c);});
+  el.appendChild(glow);el.appendChild(art);el.appendChild(name);
   return el;
 }
-
 function buildGrid(){
   const g=document.getElementById('card-grid');
   g.innerHTML='';
-  for(let i=0;i<9;i++) g.appendChild(makeCardEl(CARDS[i%CARDS.length], i));
+  for(let i=0;i<9;i++) g.appendChild(makeCardEl(CARDS[i%CARDS.length],i));
 }
-
 function renderGrid(grid){
   grid.forEach((id,i)=>{
+    // ★ FIX 5: CARD_MAP agora resolve IDs do servidor (fire/water/earth/air)
     const card=CARD_MAP[id]||CARDS[0];
     const old=document.getElementById(`card-${i}`);
     if(old) old.replaceWith(makeCardEl(card,i));
   });
 }
-
-function buildPips(energy, max){
-  const w=document.getElementById('epips');
-  w.innerHTML='';
-  for(let i=0;i<max;i++){
-    const p=document.createElement('div');
-    p.className='epip'+(i<energy?' on':'');
-    p.id=`epip-${i}`;
-    w.appendChild(p);
-  }
+function buildPips(energy,max){
+  const w=document.getElementById('epips');w.innerHTML='';
+  for(let i=0;i<max;i++){const p=document.createElement('div');p.className='epip'+(i<energy?' on':'');p.id=`epip-${i}`;w.appendChild(p);}
   setText('energy-txt',`${energy}/${max}`);
 }
-
 function buildYourCards(ownedCards){
-  const w=document.getElementById('your-cards');
-  w.innerHTML='';
+  const w=document.getElementById('your-cards');w.innerHTML='';
   const owned=Object.entries(ownedCards);
   if(owned.length===0){
-    for(let i=0;i<5;i++){
-      const mc=document.createElement('div'); mc.className='mini-card';
-      const s=document.createElement('span'); s.style.cssText='font-size:18px;opacity:.2'; s.textContent='🂠';
-      const l=document.createElement('span'); l.className='mini-lbl'; l.textContent='VAZIA';
-      mc.appendChild(s); mc.appendChild(l); w.appendChild(mc);
-    }
+    for(let i=0;i<5;i++){const mc=document.createElement('div');mc.className='mini-card';const s=document.createElement('span');s.style.cssText='font-size:18px;opacity:.2';s.textContent='🂠';const l=document.createElement('span');l.className='mini-lbl';l.textContent='VAZIA';mc.appendChild(s);mc.appendChild(l);w.appendChild(mc);}
   } else {
     owned.forEach(([id])=>{
+      // ★ FIX 5: CARD_MAP resolve IDs do servidor também
       const card=CARD_MAP[id]; if(!card) return;
-      const mc=document.createElement('div'); mc.className='mini-card';
-      const s=document.createElement('span'); s.textContent=card.emoji;
-      const l=document.createElement('span'); l.className='mini-lbl'; l.textContent=card.name;
-      mc.appendChild(s); mc.appendChild(l); w.appendChild(mc);
+      const mc=document.createElement('div');mc.className='mini-card';
+      const s=document.createElement('span');s.textContent=card.emoji;
+      const l=document.createElement('span');l.className='mini-lbl';l.textContent=card.name;
+      mc.appendChild(s);mc.appendChild(l);w.appendChild(mc);
     });
   }
 }
-
 function updateDim(progress){
   const pct=Math.min(100,progress/1500*100);
   document.getElementById('dim-fill').style.width=pct+'%';
   setText('dim-cur',progress.toLocaleString('pt-BR'));
 }
-
 function updateHUD(){
   const soul=S.soul; if(!soul) return;
   setText('hash-val',(soul.hash_balance??100).toLocaleString('pt-BR'));
   setText('gem-val',(soul.gems??0).toLocaleString('pt-BR'));
-  setText('tb-lvl', soul.level??1);
+  setText('tb-lvl',soul.level??1);
   setText('energy-txt',`${soul.energy??7}/${soul.maxEnergy??10}`);
-  for(let i=0;i<(soul.maxEnergy??10);i++){
-    const p=document.getElementById(`epip-${i}`);
-    if(p) p.className='epip'+(i<(soul.energy??7)?' on':'');
-  }
+  for(let i=0;i<(soul.maxEnergy??10);i++){const p=document.getElementById(`epip-${i}`);if(p)p.className='epip'+(i<(soul.energy??7)?' on':'');}
   const xpPct=((soul.stats?.xp??0)%1000)/1000*100;
-  const xpEl=document.getElementById('tb-xpf');
-  if(xpEl) xpEl.style.width=Math.min(100,xpPct)+'%';
+  const xpEl=document.getElementById('tb-xpf'); if(xpEl) xpEl.style.width=Math.min(100,xpPct)+'%';
   updateDim(soul.dimProgress??0);
   buildYourCards(soul.ownedCards??{});
 }
-
 function updateLastGrid(grid){
   const cells=document.querySelectorAll('#last-grid .lc');
-  grid.forEach((id,i)=>{ const c=CARD_MAP[id]||CARDS[0]; if(cells[i]) cells[i].textContent=c.emoji; });
+  grid.forEach((id,i)=>{const c=CARD_MAP[id]||CARDS[0];if(cells[i])cells[i].textContent=c.emoji;});
 }
 
+// ═══════════════════════════════════════════════════════════
+//  SPIN — POST /spin com header x-session-token
+//
+//  FIX 3: header x-session-token adicionado
+//  FIX 4: S.sessionToken usado aqui
+// ═══════════════════════════════════════════════════════════
 async function doSpin(){
   if(S.spinning) return;
   const soul=S.soul||{};
-  if((soul.energy??7)<=0){ toast('Sem energia da alma!'); return; }
+  if((soul.energy??7)<=0){toast('Sem energia da alma!');return;}
   S.spinning=true;
   document.getElementById('btn-spin').disabled=true;
   sfxSpinStart();
+
   try {
     let data;
-    try {
-      const res=await fetch(`${API}/choice`,{
+    if(S.sessionToken){
+      // ★ FIX 3: envia x-session-token no header
+      const res=await fetch(`${API}/spin`,{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ wallet:S.wallet, choice:'spin' }),
+        headers:{
+          'Content-Type':'application/json',
+          'x-session-token': S.sessionToken,   // ← obrigatório pelo servidor
+        },
+        body:JSON.stringify({}),
       });
       if(res.ok){
-        const apiData=await res.json();
-        const localResult=computeLocalSpin();
-        data={
-          result:       localResult,
-          hash_balance: (soul.hash_balance??100)+(localResult.isWin?localResult.reward:0),
-          energy:       Math.max(0,(soul.energy??7)-1),
-          maxEnergy:    soul.maxEnergy??10,
-          stats:        {...(soul.stats||{}), xp:(soul.stats?.xp||0)+(localResult.isWin?40:10), escolhas:(soul.stats?.escolhas||0)+1},
-          level:        soul.level??1,
-          dimProgress:  (soul.dimProgress??0)+25+(localResult.isWin?50:0),
-          phasePassed:  localResult.isWin,
-          ownedCards:   soul.ownedCards??{},
-        };
-      } else { data=computeFullSpin(soul); }
-    } catch(e){ data=computeFullSpin(soul); }
+        data=await res.json();
+        // Garante que result.isWin existe (server retorna result embutido)
+        if(!data.result) data.result=computeLocalSpin();
+      } else {
+        // Token expirado ou inválido — fallback local
+        console.warn('[SoulHash] /spin retornou',res.status,'— usando fallback local');
+        data=computeFullSpin(soul);
+      }
+    } else {
+      // Sem sessão — modo demo local
+      data=computeFullSpin(soul);
+    }
+
     const result=data.result;
-    Object.assign(S.soul, data);
+
+    // Atualiza estado local com resposta do servidor
+    if(S.soul){
+      S.soul.hash_balance = data.hash_balance ?? S.soul.hash_balance;
+      S.soul.energy       = data.energy       ?? Math.max(0,(S.soul.energy??7)-1);
+      S.soul.maxEnergy    = data.maxEnergy     ?? S.soul.maxEnergy;
+      S.soul.stats        = data.stats         ?? S.soul.stats;
+      S.soul.level        = data.level         ?? S.soul.level;
+      S.soul.dimProgress  = data.dimProgress   ?? S.soul.dimProgress;
+      S.soul.phasePassed  = data.phasePassed   ?? S.soul.phasePassed;
+      S.soul.ownedCards   = data.ownedCards    ?? S.soul.ownedCards;
+    }
+
     await animateSpin(result.grid);
     renderGrid(result.grid);
     await sleep(300);
+
     if(result.isWin){
-      result.winPositions.forEach(i=>{ const el=document.getElementById(`card-${i}`); if(el) el.classList.add('card-win'); });
-      result.grid.forEach((_,i)=>{ if(!result.winPositions.includes(i)){ const el=document.getElementById(`card-${i}`); if(el) el.classList.add('card-lose'); }});
+      result.winPositions.forEach(i=>{const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-win');});
+      result.grid.forEach((_,i)=>{if(!result.winPositions.includes(i)){const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-lose');}});
     }
     updateLastGrid(result.grid);
     updateHUD();
     await sleep(500);
-    showResult(result, data);
+    showResult(result,data);
+
   } catch(e){
     toast('Erro: '+sanitize(e.message));
-    console.error(e);
+    console.error('[SoulHash] doSpin error:',e);
   } finally {
     S.spinning=false;
     document.getElementById('btn-spin').disabled=false;
@@ -845,63 +814,40 @@ async function doSpin(){
   }
 }
 
+// ─── Spin local (fallback) ────────────────────────────────
 function computeLocalSpin(){
   const isWin=Math.random()<0.30;
   const grid=Array(9).fill(null).map(()=>CARDS[Math.floor(Math.random()*CARDS.length)].id);
   const winner=CARDS[Math.floor(Math.random()*CARDS.length)].id;
-  if(!isWin){
-    let t=0;
-    while(hasWinLocal(grid)&&t++<50) for(let i=0;i<9;i++) grid[i]=CARDS[Math.floor(Math.random()*CARDS.length)].id;
-    return {isWin:false,grid,combo:'none',winPositions:[],reward:0,cardWon:null};
-  }
+  if(!isWin){let t=0;while(hasWinLocal(grid)&&t++<50)for(let i=0;i<9;i++)grid[i]=CARDS[Math.floor(Math.random()*CARDS.length)].id;return {isWin:false,grid,combo:'none',winPositions:[],reward:0,cardWon:null};}
   const roll=Math.random();
-  if(roll<0.55){ const row=Math.floor(Math.random()*3); grid[row*3]=grid[row*3+1]=grid[row*3+2]=winner; return {isWin:true,grid,combo:'3linha',winPositions:[row*3,row*3+1,row*3+2],reward:50,cardWon:winner}; }
-  else if(roll<0.80){ const d=Math.random()<.5?[0,4,8]:[2,4,6]; d.forEach(i=>grid[i]=winner); return {isWin:true,grid,combo:'diagonal',winPositions:d,reward:80,cardWon:winner}; }
-  else if(roll<0.93){ [0,2,4,6,8].forEach(i=>grid[i]=winner); return {isWin:true,grid,combo:'cruz',winPositions:[0,2,4,6,8],reward:120,cardWon:winner}; }
-  else { CARDS.forEach((c,i)=>{if(i<9)grid[i]=c.id;}); return {isWin:true,grid,combo:'todos',winPositions:[0,1,2,3,4,5,6,7,8],reward:60,cardWon:winner}; }
+  if(roll<0.55){const row=Math.floor(Math.random()*3);grid[row*3]=grid[row*3+1]=grid[row*3+2]=winner;return {isWin:true,grid,combo:'3linha',winPositions:[row*3,row*3+1,row*3+2],reward:50,cardWon:winner};}
+  else if(roll<0.80){const d=Math.random()<.5?[0,4,8]:[2,4,6];d.forEach(i=>grid[i]=winner);return {isWin:true,grid,combo:'diagonal',winPositions:d,reward:80,cardWon:winner};}
+  else if(roll<0.93){[0,2,4,6,8].forEach(i=>grid[i]=winner);return {isWin:true,grid,combo:'cruz',winPositions:[0,2,4,6,8],reward:120,cardWon:winner};}
+  else{CARDS.forEach((c,i)=>{if(i<9)grid[i]=c.id;});return {isWin:true,grid,combo:'todos',winPositions:[0,1,2,3,4,5,6,7,8],reward:60,cardWon:winner};}
 }
-
-function hasWinLocal(grid){
-  return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
-    .some(([a,b,c])=>grid[a]&&grid[a]===grid[b]&&grid[b]===grid[c]);
-}
-
+function hasWinLocal(grid){return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(([a,b,c])=>grid[a]&&grid[a]===grid[b]&&grid[b]===grid[c]);}
 function computeFullSpin(soul){
   const r=computeLocalSpin();
-  return {
-    result:r,
-    hash_balance:(soul.hash_balance??100)+(r.isWin?r.reward:0),
-    energy:Math.max(0,(soul.energy??7)-1),
-    maxEnergy:soul.maxEnergy??10,
-    stats:{...(soul.stats||{}),xp:(soul.stats?.xp||0)+(r.isWin?40:10),escolhas:(soul.stats?.escolhas||0)+1},
-    level:Math.floor(((soul.stats?.xp||0)+(r.isWin?40:10))/1000)+1,
-    dimProgress:(soul.dimProgress??0)+25+(r.isWin?50:0),
-    phasePassed:r.isWin?true:(soul.phasePassed??false),
-    ownedCards:r.isWin&&r.cardWon?{...(soul.ownedCards||{}),[r.cardWon]:((soul.ownedCards||{})[r.cardWon]||0)+1}:(soul.ownedCards||{}),
-  };
+  return {result:r,hash_balance:(soul.hash_balance??100)+(r.isWin?r.reward:0),energy:Math.max(0,(soul.energy??7)-1),maxEnergy:soul.maxEnergy??10,stats:{...(soul.stats||{}),xp:(soul.stats?.xp||0)+(r.isWin?40:10)},level:Math.floor(((soul.stats?.xp||0)+(r.isWin?40:10))/1000)+1,dimProgress:(soul.dimProgress??0)+25+(r.isWin?50:0),phasePassed:r.isWin?true:(soul.phasePassed??false),ownedCards:r.isWin&&r.cardWon?{...(soul.ownedCards||{}),[r.cardWon]:((soul.ownedCards||{})[r.cardWon]||0)+1}:(soul.ownedCards||{})};
 }
-
 async function animateSpin(finalGrid){
   return new Promise(resolve=>{
-    const start=Date.now(), dur=1800;
+    const start=Date.now(),dur=1800;
     function tick(){
       const elapsed=Date.now()-start;
-      if(elapsed>=dur){ renderGrid(finalGrid); resolve(); return; }
-      const prog=elapsed/dur;
+      if(elapsed>=dur){renderGrid(finalGrid);resolve();return;}
       renderGrid(Array(9).fill(null).map(()=>CARDS[Math.floor(Math.random()*CARDS.length)].id));
-      if(Math.random()<0.25) sfxCardFlip();
-      setTimeout(tick, 55+Math.floor(prog*prog*260));
+      if(Math.random()<0.25)sfxCardFlip();
+      setTimeout(tick,55+Math.floor((elapsed/dur)**2*260));
     }
     tick();
   });
 }
-
-function showResult(result, data){
-  const ovl=document.getElementById('result-ovl');
-  const box=document.getElementById('result-box');
-  const isWin=result.isWin;
+function showResult(result,data){
+  const ovl=document.getElementById('result-ovl'),box=document.getElementById('result-box'),isWin=result.isWin;
   box.className='result-box '+(isWin?'rbox-win':'rbox-lose');
-  if(isWin) sfxWin(); else sfxLose();
+  if(isWin)sfxWin();else sfxLose();
   setText('r-emoji',isWin?'🏆':'💀');
   setText('r-title',isWin?'VITÓRIA!':'DERROTA');
   setText('r-desc', isWin?'Você combinou 3 cartas!':'Nenhuma combinação. Tente novamente!');
@@ -909,40 +855,36 @@ function showResult(result, data){
   setText('r-reward',isWin?`+${result.reward} Hash`:`+10 XP`);
   if(isWin){
     const epic=EPIC_CARDS[Math.floor(Math.random()*EPIC_CARDS.length)];
-    const rb=document.getElementById('reward-box');
-    rb.innerHTML='';
-    const emo=document.createElement('span'); emo.className='rwd-emoji'; emo.textContent=epic.emoji;
-    const nm=document.createElement('div');  nm.className='rwd-name';   nm.textContent=epic.name;
-    const st=document.createElement('div');  st.className='rwd-stat';   st.textContent=epic.stats;
-    rb.appendChild(emo); rb.appendChild(nm); rb.appendChild(st);
-    const cb=document.getElementById('combo-bonus');
-    cb.innerHTML='';
-    const n=document.createElement('div'); n.style.cssText='font-family:Cinzel,serif;font-size:13px;color:var(--sombra);letter-spacing:1px;margin-bottom:5px'; n.textContent=COMBO_LABELS[result.combo]||'';
-    const d=document.createElement('div'); d.style.cssText='font-size:12px;color:var(--text-d)'; d.textContent=`+${result.reward} Hash`;
-    cb.appendChild(n); cb.appendChild(d);
+    const rb=document.getElementById('reward-box');rb.innerHTML='';
+    const emo=document.createElement('span');emo.className='rwd-emoji';emo.textContent=epic.emoji;
+    const nm=document.createElement('div');nm.className='rwd-name';nm.textContent=epic.name;
+    const st=document.createElement('div');st.className='rwd-stat';st.textContent=epic.stats;
+    rb.appendChild(emo);rb.appendChild(nm);rb.appendChild(st);
+    const cb=document.getElementById('combo-bonus');cb.innerHTML='';
+    const n=document.createElement('div');n.style.cssText='font-family:Cinzel,serif;font-size:13px;color:var(--sombra);letter-spacing:1px;margin-bottom:5px';n.textContent=COMBO_LABELS[result.combo]||'';
+    const d=document.createElement('div');d.style.cssText='font-size:12px;color:var(--text-d)';d.textContent=`+${result.reward} Hash`;
+    cb.appendChild(n);cb.appendChild(d);
   }
   setText('r-btn',isWin&&data.phasePassed?'✦ AVANÇAR NO UNIVERSO':isWin?'CONTINUAR':'TENTAR NOVAMENTE');
   ovl.className='result-ovl on';
 }
-
 function closeResult(){
   document.getElementById('result-ovl').className='result-ovl';
-  for(let i=0;i<9;i++){ const el=document.getElementById(`card-${i}`); if(el){el.classList.remove('card-win','card-lose');}}
+  for(let i=0;i<9;i++){const el=document.getElementById(`card-${i}`);if(el){el.classList.remove('card-win','card-lose');}}
 }
 
-window.addEventListener('load', async()=>{
+// ─── Init ─────────────────────────────────────────────────
+window.addEventListener('load',async()=>{
   setTimeout(async()=>{
     const loadEl=document.getElementById('s-load');
-    loadEl.style.opacity='0';
-    loadEl.style.pointerEvents='none';
-    setTimeout(()=>{ loadEl.classList.remove('active'); showScreen('s-connect'); }, 500);
+    loadEl.style.opacity='0';loadEl.style.pointerEvents='none';
+    setTimeout(()=>{loadEl.classList.remove('active');showScreen('s-connect');},500);
     try {
       const phantom=window.phantom?.solana??window.solana;
-      if(phantom?.isConnected && phantom.publicKey){
+      if(phantom?.isConnected&&phantom.publicKey){
         S.wallet=phantom.publicKey.toString();
         const short=S.wallet.slice(0,6)+'...'+S.wallet.slice(-4);
-        const pill=document.getElementById('wallet-pill');
-        pill.style.display='flex';
+        document.getElementById('wallet-pill').style.display='flex';
         setText('wallet-addr-short','✓ '+short+' conectada');
         document.getElementById('btn-connect').disabled=true;
         document.getElementById('btn-connect').textContent='✓ PHANTOM CONECTADA';
@@ -951,188 +893,45 @@ window.addEventListener('load', async()=>{
         document.getElementById('btn-sign').style.display='block';
       }
     } catch(e){}
-  }, 1400);
+  },1400);
 });
 
-document.getElementById('btn-connect').addEventListener('click', connectWallet);
-document.getElementById('btn-sign').addEventListener('click', signAndLogin);
-document.getElementById('btn-enter-arena').addEventListener('click', ()=>{ sfxButton(); enterArenaFn(); });
-document.getElementById('btn-spin').addEventListener('click', doSpin);
-document.getElementById('r-btn').addEventListener('click', ()=>{ sfxButton(); closeResult(); });
+document.getElementById('btn-connect').addEventListener('click',connectWallet);
+document.getElementById('btn-sign').addEventListener('click',signAndLogin);
+document.getElementById('btn-enter-arena').addEventListener('click',()=>{sfxButton();enterArenaFn();});
+document.getElementById('btn-spin').addEventListener('click',doSpin);
+document.getElementById('r-btn').addEventListener('click',()=>{sfxButton();closeResult();});
 
-// ÁUDIO
-const AUDIO = {
-  ctx:null, masterGain:null, muted:false,
-  volume:0.40, started:false, musicNodes:[],
-};
-
-function initAudio(){
-  if(AUDIO.ctx) return;
-  AUDIO.ctx        = new (window.AudioContext || window.webkitAudioContext)();
-  AUDIO.masterGain = AUDIO.ctx.createGain();
-  AUDIO.masterGain.gain.setValueAtTime(AUDIO.volume, AUDIO.ctx.currentTime);
-  AUDIO.masterGain.connect(AUDIO.ctx.destination);
-}
-function resumeCtx(){
-  if(AUDIO.ctx?.state==='suspended') AUDIO.ctx.resume();
-}
+// ─── Áudio ────────────────────────────────────────────────
+const AUDIO={ctx:null,masterGain:null,muted:false,volume:0.40,started:false,musicNodes:[]};
+function initAudio(){if(AUDIO.ctx)return;AUDIO.ctx=new(window.AudioContext||window.webkitAudioContext)();AUDIO.masterGain=AUDIO.ctx.createGain();AUDIO.masterGain.gain.setValueAtTime(AUDIO.volume,AUDIO.ctx.currentTime);AUDIO.masterGain.connect(AUDIO.ctx.destination);}
+function resumeCtx(){if(AUDIO.ctx?.state==='suspended')AUDIO.ctx.resume();}
 function startMusic(){
-  if(!AUDIO.ctx||AUDIO.started) return;
-  AUDIO.started=true; resumeCtx();
-  const ctx=AUDIO.ctx, now=ctx.currentTime;
-  [55,55.3].forEach((freq,i)=>{
-    const osc=ctx.createOscillator(), gain=ctx.createGain(), filt=ctx.createBiquadFilter();
-    osc.type='sawtooth'; osc.frequency.setValueAtTime(freq,now);
-    filt.type='lowpass'; filt.frequency.value=180; filt.Q.value=1.2;
-    gain.gain.setValueAtTime(0.28-i*0.05,now);
-    osc.connect(filt); filt.connect(gain); gain.connect(AUDIO.masterGain); osc.start(now);
-    AUDIO.musicNodes.push(osc,gain,filt);
-  });
-  const NOTES=[110,130.81,146.83,164.81,196,220]; let noteIdx=0;
-  function playArpNote(){
-    if(!AUDIO.started||AUDIO.muted) return;
-    const t=ctx.currentTime, freq=NOTES[noteIdx++%NOTES.length];
-    const osc=ctx.createOscillator(), env=ctx.createGain(), filt=ctx.createBiquadFilter(), rev=createReverb(ctx,2.5);
-    osc.type='triangle'; osc.frequency.setValueAtTime(freq,t);
-    osc.frequency.linearRampToValueAtTime(freq*1.002,t+0.8); osc.frequency.linearRampToValueAtTime(freq,t+1.6);
-    filt.type='bandpass'; filt.frequency.value=freq*2; filt.Q.value=2;
-    env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.22,t+0.8);
-    env.gain.linearRampToValueAtTime(0.12,t+2.0); env.gain.linearRampToValueAtTime(0,t+3.5);
-    osc.connect(filt); filt.connect(env); env.connect(rev); rev.connect(AUDIO.masterGain);
-    osc.start(t); osc.stop(t+3.8);
-    setTimeout(playArpNote, 2200+Math.random()*1600);
-  }
+  if(!AUDIO.ctx||AUDIO.started)return;AUDIO.started=true;resumeCtx();
+  const ctx=AUDIO.ctx,now=ctx.currentTime;
+  [55,55.3].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),filt=ctx.createBiquadFilter();osc.type='sawtooth';osc.frequency.setValueAtTime(freq,now);filt.type='lowpass';filt.frequency.value=180;filt.Q.value=1.2;gain.gain.setValueAtTime(0.28-i*0.05,now);osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);osc.start(now);AUDIO.musicNodes.push(osc,gain,filt);});
+  const NOTES=[110,130.81,146.83,164.81,196,220];let noteIdx=0;
+  function playArpNote(){if(!AUDIO.started||AUDIO.muted)return;const t=ctx.currentTime,freq=NOTES[noteIdx++%NOTES.length];const osc=ctx.createOscillator(),env=ctx.createGain(),filt=ctx.createBiquadFilter(),rev=createReverb(ctx,2.5);osc.type='triangle';osc.frequency.setValueAtTime(freq,t);osc.frequency.linearRampToValueAtTime(freq*1.002,t+0.8);osc.frequency.linearRampToValueAtTime(freq,t+1.6);filt.type='bandpass';filt.frequency.value=freq*2;filt.Q.value=2;env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(0.22,t+0.8);env.gain.linearRampToValueAtTime(0.12,t+2.0);env.gain.linearRampToValueAtTime(0,t+3.5);osc.connect(filt);filt.connect(env);env.connect(rev);rev.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+3.8);setTimeout(playArpNote,2200+Math.random()*1600);}
   setTimeout(playArpNote,600);
-  [220,293.66,329.63].forEach((freq,i)=>{
-    const osc=ctx.createOscillator(), tremOsc=ctx.createOscillator(), tremGain=ctx.createGain(), gain=ctx.createGain(), filt=ctx.createBiquadFilter();
-    osc.type='sine'; osc.frequency.setValueAtTime(freq,now); osc.detune.setValueAtTime(-10+i*5,now);
-    tremOsc.type='sine'; tremOsc.frequency.setValueAtTime(0.15+i*0.04,now);
-    tremGain.gain.setValueAtTime(0.08,now); tremOsc.connect(tremGain); tremGain.connect(gain.gain);
-    filt.type='lowpass'; filt.frequency.value=800;
-    gain.gain.setValueAtTime(0.06-i*0.01,now); gain.gain.linearRampToValueAtTime(0.10-i*0.02,now+4);
-    osc.connect(filt); filt.connect(gain); gain.connect(AUDIO.masterGain);
-    tremOsc.start(now); osc.start(now);
-    AUDIO.musicNodes.push(osc,tremOsc,tremGain,gain,filt);
-  });
-  function pulseSubBass(){
-    if(!AUDIO.started) return;
-    const t=ctx.currentTime, osc=ctx.createOscillator(), env=ctx.createGain(), filt=ctx.createBiquadFilter();
-    osc.type='sine'; osc.frequency.setValueAtTime(55,t); osc.frequency.linearRampToValueAtTime(40,t+0.8);
-    filt.type='lowpass'; filt.frequency.value=100;
-    env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(0.35,t+0.05); env.gain.exponentialRampToValueAtTime(0.001,t+0.9);
-    osc.connect(filt); filt.connect(env); env.connect(AUDIO.masterGain); osc.start(t); osc.stop(t+1);
-    setTimeout(pulseSubBass,3600+Math.random()*2400);
-  }
-  setTimeout(pulseSubBass,1800);
-  updateWaves(true);
+  [220,293.66,329.63].forEach((freq,i)=>{const osc=ctx.createOscillator(),tremOsc=ctx.createOscillator(),tremGain=ctx.createGain(),gain=ctx.createGain(),filt=ctx.createBiquadFilter();osc.type='sine';osc.frequency.setValueAtTime(freq,now);osc.detune.setValueAtTime(-10+i*5,now);tremOsc.type='sine';tremOsc.frequency.setValueAtTime(0.15+i*0.04,now);tremGain.gain.setValueAtTime(0.08,now);tremOsc.connect(tremGain);tremGain.connect(gain.gain);filt.type='lowpass';filt.frequency.value=800;gain.gain.setValueAtTime(0.06-i*0.01,now);gain.gain.linearRampToValueAtTime(0.10-i*0.02,now+4);osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);tremOsc.start(now);osc.start(now);AUDIO.musicNodes.push(osc,tremOsc,tremGain,gain,filt);});
+  function pulseSubBass(){if(!AUDIO.started)return;const t=ctx.currentTime,osc=ctx.createOscillator(),env=ctx.createGain(),filt=ctx.createBiquadFilter();osc.type='sine';osc.frequency.setValueAtTime(55,t);osc.frequency.linearRampToValueAtTime(40,t+0.8);filt.type='lowpass';filt.frequency.value=100;env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(0.35,t+0.05);env.gain.exponentialRampToValueAtTime(0.001,t+0.9);osc.connect(filt);filt.connect(env);env.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+1);setTimeout(pulseSubBass,3600+Math.random()*2400);}
+  setTimeout(pulseSubBass,1800);updateWaves(true);
 }
-function createReverb(ctx,duration){
-  const conv=ctx.createConvolver(), sr=ctx.sampleRate, len=sr*duration, imp=ctx.createBuffer(2,len,sr);
-  for(let ch=0;ch<2;ch++){const d=imp.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5);}
-  conv.buffer=imp;
-  const wet=ctx.createGain(); wet.gain.setValueAtTime(0.35,ctx.currentTime); conv.connect(wet); return wet;
-}
-function sfxCardFlip(){
-  if(!AUDIO.ctx||AUDIO.muted) return; resumeCtx();
-  const ctx=AUDIO.ctx, t=ctx.currentTime;
-  const buf=ctx.createBuffer(1,ctx.sampleRate*0.08,ctx.sampleRate);
-  const data=buf.getChannelData(0); for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,3);
-  const src=ctx.createBufferSource(), filt=ctx.createBiquadFilter(), gain=ctx.createGain();
-  src.buffer=buf; filt.type='bandpass'; filt.frequency.value=3000; filt.Q.value=0.8;
-  gain.gain.setValueAtTime(0.18,t); gain.gain.linearRampToValueAtTime(0,t+0.08);
-  src.connect(filt); filt.connect(gain); gain.connect(AUDIO.masterGain); src.start(t);
-}
-function sfxSpinStart(){
-  if(!AUDIO.ctx||AUDIO.muted) return; resumeCtx();
-  const ctx=AUDIO.ctx, t=ctx.currentTime;
-  const osc=ctx.createOscillator(), gain=ctx.createGain(), filt=ctx.createBiquadFilter();
-  osc.type='sawtooth'; osc.frequency.setValueAtTime(80,t); osc.frequency.exponentialRampToValueAtTime(600,t+0.5);
-  filt.type='highpass'; filt.frequency.value=200;
-  gain.gain.setValueAtTime(0.22,t); gain.gain.linearRampToValueAtTime(0,t+0.5);
-  osc.connect(filt); filt.connect(gain); gain.connect(AUDIO.masterGain); osc.start(t); osc.stop(t+0.5);
-}
-function sfxWin(){
-  if(!AUDIO.ctx||AUDIO.muted) return; resumeCtx();
-  const ctx=AUDIO.ctx, t=ctx.currentTime;
-  [440,523.25,659.25,880,1046.5].forEach((freq,i)=>{
-    const osc=ctx.createOscillator(), gain=ctx.createGain(), rev=createReverb(ctx,1.5), st=t+i*0.10;
-    osc.type='triangle'; osc.frequency.setValueAtTime(freq,st);
-    gain.gain.setValueAtTime(0,st); gain.gain.linearRampToValueAtTime(0.25,st+0.05); gain.gain.exponentialRampToValueAtTime(0.001,st+0.8);
-    osc.connect(gain); gain.connect(rev); rev.connect(AUDIO.masterGain); osc.start(st); osc.stop(st+0.9);
-  });
-  setTimeout(()=>{
-    const osc=ctx.createOscillator(), gain=ctx.createGain();
-    osc.type='sine'; osc.frequency.setValueAtTime(2800,ctx.currentTime); osc.frequency.linearRampToValueAtTime(1800,ctx.currentTime+0.8);
-    gain.gain.setValueAtTime(0.1,ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);
-    osc.connect(gain); gain.connect(AUDIO.masterGain); osc.start(); osc.stop(ctx.currentTime+0.9);
-  },300);
-}
-function sfxLose(){
-  if(!AUDIO.ctx||AUDIO.muted) return; resumeCtx();
-  const ctx=AUDIO.ctx, t=ctx.currentTime;
-  [220,196,174.61,164.81].forEach((freq,i)=>{
-    const osc=ctx.createOscillator(), gain=ctx.createGain(), filt=ctx.createBiquadFilter(), st=t+i*0.18;
-    osc.type='sawtooth'; osc.frequency.setValueAtTime(freq,st);
-    gain.gain.setValueAtTime(0,st); gain.gain.linearRampToValueAtTime(0.18,st+0.05); gain.gain.exponentialRampToValueAtTime(0.001,st+0.7);
-    filt.type='lowpass'; filt.frequency.value=800;
-    osc.connect(filt); filt.connect(gain); gain.connect(AUDIO.masterGain); osc.start(st); osc.stop(st+0.8);
-  });
-  const noise=ctx.createBuffer(1,ctx.sampleRate*0.6,ctx.sampleRate);
-  const nd=noise.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=(Math.random()*2-1)*(1-i/nd.length);
-  const src=ctx.createBufferSource(), filt=ctx.createBiquadFilter(), gain=ctx.createGain();
-  src.buffer=noise; filt.type='lowpass'; filt.frequency.value=80;
-  gain.gain.setValueAtTime(0.3,t+0.5); gain.gain.linearRampToValueAtTime(0,t+1.2);
-  src.connect(filt); filt.connect(gain); gain.connect(AUDIO.masterGain); src.start(t+0.5);
-}
-function sfxConnect(){
-  if(!AUDIO.ctx||AUDIO.muted) return; resumeCtx();
-  const ctx=AUDIO.ctx, t=ctx.currentTime;
-  [523.25,783.99].forEach((freq,i)=>{
-    const osc=ctx.createOscillator(), gain=ctx.createGain(), st=t+i*0.15;
-    osc.type='sine'; osc.frequency.setValueAtTime(freq,st);
-    gain.gain.setValueAtTime(0,st); gain.gain.linearRampToValueAtTime(0.2,st+0.04); gain.gain.exponentialRampToValueAtTime(0.001,st+1.2);
-    osc.connect(gain); gain.connect(AUDIO.masterGain); osc.start(st); osc.stop(st+1.3);
-  });
-}
-function sfxButton(){
-  if(!AUDIO.ctx||AUDIO.muted) return; resumeCtx();
-  const ctx=AUDIO.ctx, t=ctx.currentTime;
-  const osc=ctx.createOscillator(), gain=ctx.createGain();
-  osc.type='sine'; osc.frequency.setValueAtTime(660,t); osc.frequency.linearRampToValueAtTime(880,t+0.06);
-  gain.gain.setValueAtTime(0.12,t); gain.gain.exponentialRampToValueAtTime(0.001,t+0.12);
-  osc.connect(gain); gain.connect(AUDIO.masterGain); osc.start(t); osc.stop(t+0.14);
-}
-function toggleMute(){
-  AUDIO.muted=!AUDIO.muted;
-  if(AUDIO.masterGain) AUDIO.masterGain.gain.setTargetAtTime(AUDIO.muted?0:AUDIO.volume,AUDIO.ctx.currentTime,0.1);
-  const btn=document.getElementById('btn-mute');
-  if(btn) btn.textContent=AUDIO.muted?'🔇':'🔊';
-  updateWaves(!AUDIO.muted);
-}
-function setVolume(val){
-  AUDIO.volume=val/100;
-  if(AUDIO.masterGain&&!AUDIO.muted) AUDIO.masterGain.gain.setTargetAtTime(AUDIO.volume,AUDIO.ctx.currentTime,0.05);
-}
-function updateWaves(playing){
-  document.querySelectorAll('.wave-bar').forEach(b=>{ b.className='wave-bar'+(playing?'':' paused'); });
-}
-function audioBootstrap(){
-  if(AUDIO.ctx) return;
-  initAudio(); startMusic();
-  document.removeEventListener('click',audioBootstrap);
-  document.removeEventListener('keydown',audioBootstrap);
-}
-document.addEventListener('click',   audioBootstrap);
-document.addEventListener('keydown', audioBootstrap);
-document.getElementById('btn-mute').addEventListener('click', e=>{
-  e.stopPropagation();
-  if(!AUDIO.ctx){ initAudio(); startMusic(); }
-  toggleMute();
-});
-document.getElementById('vol-slider').addEventListener('input', e=>{
-  e.stopPropagation();
-  setVolume(Number(e.target.value));
-});
+function createReverb(ctx,duration){const conv=ctx.createConvolver(),sr=ctx.sampleRate,len=sr*duration,imp=ctx.createBuffer(2,len,sr);for(let ch=0;ch<2;ch++){const d=imp.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5);}conv.buffer=imp;const wet=ctx.createGain();wet.gain.setValueAtTime(0.35,ctx.currentTime);conv.connect(wet);return wet;}
+function sfxCardFlip(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;const buf=ctx.createBuffer(1,ctx.sampleRate*0.08,ctx.sampleRate);const data=buf.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,3);const src=ctx.createBufferSource(),filt=ctx.createBiquadFilter(),gain=ctx.createGain();src.buffer=buf;filt.type='bandpass';filt.frequency.value=3000;filt.Q.value=0.8;gain.gain.setValueAtTime(0.18,t);gain.gain.linearRampToValueAtTime(0,t+0.08);src.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);src.start(t);}
+function sfxSpinStart(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;const osc=ctx.createOscillator(),gain=ctx.createGain(),filt=ctx.createBiquadFilter();osc.type='sawtooth';osc.frequency.setValueAtTime(80,t);osc.frequency.exponentialRampToValueAtTime(600,t+0.5);filt.type='highpass';filt.frequency.value=200;gain.gain.setValueAtTime(0.22,t);gain.gain.linearRampToValueAtTime(0,t+0.5);osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+0.5);}
+function sfxWin(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[440,523.25,659.25,880,1046.5].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),rev=createReverb(ctx,1.5),st=t+i*0.10;osc.type='triangle';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.25,st+0.05);gain.gain.exponentialRampToValueAtTime(0.001,st+0.8);osc.connect(gain);gain.connect(rev);rev.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+0.9);});setTimeout(()=>{const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(2800,ctx.currentTime);osc.frequency.linearRampToValueAtTime(1800,ctx.currentTime+0.8);gain.gain.setValueAtTime(0.1,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);osc.connect(gain);gain.connect(AUDIO.masterGain);osc.start();osc.stop(ctx.currentTime+0.9);},300);}
+function sfxLose(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[220,196,174.61,164.81].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),filt=ctx.createBiquadFilter(),st=t+i*0.18;osc.type='sawtooth';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.18,st+0.05);gain.gain.exponentialRampToValueAtTime(0.001,st+0.7);filt.type='lowpass';filt.frequency.value=800;osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+0.8);});const noise=ctx.createBuffer(1,ctx.sampleRate*0.6,ctx.sampleRate);const nd=noise.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*(1-i/nd.length);const src=ctx.createBufferSource(),filt=ctx.createBiquadFilter(),gain=ctx.createGain();src.buffer=noise;filt.type='lowpass';filt.frequency.value=80;gain.gain.setValueAtTime(0.3,t+0.5);gain.gain.linearRampToValueAtTime(0,t+1.2);src.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);src.start(t+0.5);}
+function sfxConnect(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[523.25,783.99].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),st=t+i*0.15;osc.type='sine';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.2,st+0.04);gain.gain.exponentialRampToValueAtTime(0.001,st+1.2);osc.connect(gain);gain.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+1.3);});}
+function sfxButton(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(660,t);osc.frequency.linearRampToValueAtTime(880,t+0.06);gain.gain.setValueAtTime(0.12,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.12);osc.connect(gain);gain.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+0.14);}
+function toggleMute(){AUDIO.muted=!AUDIO.muted;if(AUDIO.masterGain)AUDIO.masterGain.gain.setTargetAtTime(AUDIO.muted?0:AUDIO.volume,AUDIO.ctx.currentTime,0.1);const btn=document.getElementById('btn-mute');if(btn)btn.textContent=AUDIO.muted?'🔇':'🔊';updateWaves(!AUDIO.muted);}
+function setVolume(val){AUDIO.volume=val/100;if(AUDIO.masterGain&&!AUDIO.muted)AUDIO.masterGain.gain.setTargetAtTime(AUDIO.volume,AUDIO.ctx.currentTime,0.05);}
+function updateWaves(playing){document.querySelectorAll('.wave-bar').forEach(b=>{b.className='wave-bar'+(playing?'':' paused');});}
+function audioBootstrap(){if(AUDIO.ctx)return;initAudio();startMusic();document.removeEventListener('click',audioBootstrap);document.removeEventListener('keydown',audioBootstrap);}
+document.addEventListener('click',audioBootstrap);
+document.addEventListener('keydown',audioBootstrap);
+document.getElementById('btn-mute').addEventListener('click',e=>{e.stopPropagation();if(!AUDIO.ctx){initAudio();startMusic();}toggleMute();});
+document.getElementById('vol-slider').addEventListener('input',e=>{e.stopPropagation();setVolume(Number(e.target.value));});
 </script>
 </body>
 </html>
