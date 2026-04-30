@@ -549,66 +549,60 @@ const COMBO_LABELS = {
   '3linha':'TRÍADE SAGRADA','diagonal':'DIAGONAL COMPLETA',
   'cruz':'ALMA RARA','todos':'TRÍADE DAS SOMBRAS','none':''
 };
-
 async function connectWallet(){
   const phantom = window.phantom?.solana ?? window.solana;
+
   if(!phantom?.isPhantom){
     setStatus('Phantom Wallet não detectada. Instale em phantom.app ou abra no browser da Phantom.','error');
     return;
   }
+
   const btn = document.getElementById('btn-connect');
-  btn.disabled=true; btn.textContent='CONECTANDO...';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'CONECTANDO...';
+  }
+
   setStatus('Aguardando aprovação na Phantom...','info');
+
   try {
-    const resp  = await phantom.connect();
-    S.wallet    = resp.publicKey.toString();
-    const short = S.wallet.slice(0,6)+'...'+S.wallet.slice(-4);
-    const pill  = document.getElementById('wallet-pill');
-    pill.style.display='flex';
-    setText('wallet-addr-short', '✓ '+short+' conectada');
-    btn.textContent='✓ PHANTOM CONECTADA';
-    sfxConnect();
+    const resp = await phantom.connect();
+
+    S.wallet = resp.publicKey.toString();
+
+    const short = S.wallet.slice(0,6) + '...' + S.wallet.slice(-4);
+
+    const pill = document.getElementById('wallet-pill');
+    if (pill) pill.style.display = 'flex';
+
+    setText('wallet-addr-short', '✓ ' + short + ' conectada');
+
+    if (btn) btn.textContent = '✓ PHANTOM CONECTADA';
+
+    if (typeof sfxConnect === 'function') sfxConnect();
+
     setStep(2);
-    setStatus('Wallet conectada. Assine a mensagem para gerar seu SoulHash.','success');
-    document.getElementById('btn-sign').style.display='block';
+
+    setStatus(
+      'Wallet conectada. Assine a mensagem para gerar seu SoulHash.',
+      'success'
+    );
+
+    const signBtn = document.getElementById('btn-sign');
+    if (signBtn) signBtn.style.display = 'block';
+
   } catch(e){
+    console.error(e);
+
     setStatus('Conexão cancelada ou recusada.','warn');
-    btn.disabled=false;
-    btn.textContent='CONECTAR PHANTOM WALLET';
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'CONECTAR PHANTOM WALLET';
+    }
   }
 }
 
-async function signAndLogin(){
-  if(!S.wallet){ toast('Conecte a wallet primeiro'); return; }
-  const btn = document.getElementById('btn-sign');
-  btn.disabled=true; btn.textContent='AGUARDE...';
-  setStep(2);
-  try {
-    setStatus('Solicitando desafio de autenticação...','info');
-    const nonceRes = await fetch(`${API}/nonce?wallet=${encodeURIComponent(S.wallet)}`);
-    if(!nonceRes.ok) throw new Error(`Nonce HTTP ${nonceRes.status}`);
-    const { nonce, message } = await nonceRes.json();
-    setStatus('Assine a mensagem na Phantom para confirmar sua identidade...','info');
-    btn.textContent='ASSINAR NA PHANTOM...';
-    const phantom    = window.phantom?.solana ?? window.solana;
-    const encoded    = new TextEncoder().encode(message);
-    const signResult = await phantom.signMessage(encoded, 'utf8');
-    const signature  = toBase58(signResult.signature);
-    setStep(3);
-    setStatus('Verificando e gerando seu SoulHash...','info');
-    btn.textContent='VERIFICANDO...';
-    const loginRes = await fetch(`${API}/login`, {
-      method:  'POST',
-      headers: {'Content-Type':'application/json'},
-      body:    JSON.stringify({ wallet: S.wallet, signature, nonce }),
-    });
-    if(!loginRes.ok){
-      const err = await loginRes.json().catch(()=>({}));
-      throw new Error(err.error || `HTTP ${loginRes.status}`);
-    }
-    const data = await loginRes.json();
-    S.soulhash = data.soulhash;
-    S.soul = {
       soulhash:     data.soulhash,
       wallet:       S.wallet,
       luz:          data.luz         ?? 35,
