@@ -595,9 +595,10 @@ async function signAndLogin(){
     const signResult = await phantom.signMessage(encoded, 'utf8');
     const signature  = toBase58(signResult.signature);
     setStep(3);
-    setStatus('Verificando e gerando seu SoulHash...','info');
-    btn.textContent='VERIFICANDO...';
-    cconst phantom = window.phantom?.solana ?? window.solana;
+    ssetStatus('Verificando e gerando seu SoulHash...','info');
+btn.textContent = 'VERIFICANDO...';
+
+const phantom = window.phantom?.solana ?? window.solana;
 
 if (!phantom) throw new Error('Phantom não encontrada');
 
@@ -608,8 +609,6 @@ const signResult = await phantom.signMessage(encoded, 'utf8');
 const signature = Array.from(signResult.signature);
 
 setStep(3);
-setStatus('Verificando e gerando seu SoulHash...','info');
-btn.textContent = 'VERIFICANDO...';
 
 const loginRes = await fetch(`${API}/verify`, {
   method: 'POST',
@@ -619,8 +618,13 @@ const loginRes = await fetch(`${API}/verify`, {
     signature
   })
 });
-    S.soulhash = data.soulhash;
-    S.soul = {
+
+if (!loginRes.ok) throw new Error(`HTTP ${loginRes.status}`);
+
+const data = await loginRes.json();
+
+S.soulhash = data.soulhash;
+S.soul = {
       soulhash:     data.soulhash,
       wallet:       S.wallet,
       luz:          data.luz         ?? 35,
