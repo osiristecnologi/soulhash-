@@ -595,38 +595,51 @@ async function signAndLogin(){
     const signResult = await phantom.signMessage(encoded, 'utf8');
     const signature  = toBase58(signResult.signature);
     setStep(3);
-    ssetStatus('Verificando e gerando seu SoulHash...','info');
-btn.textContent = 'VERIFICANDO...';
+    try {
+  stry {
+  setStatus('Verificando e gerando seu SoulHash...','info');
+  btn.textContent = 'VERIFICANDO...';
 
-const phantom = window.phantom?.solana ?? window.solana;
+  const phantom = window.phantom?.solana ?? window.solana;
+  if (!phantom) throw new Error('Phantom não encontrada');
 
-if (!phantom) throw new Error('Phantom não encontrada');
+  if (!message) throw new Error('Mensagem inválida');
 
-const encoded = new TextEncoder().encode(message);
+  const encoded = new TextEncoder().encode(message);
 
-const signResult = await phantom.signMessage(encoded, 'utf8');
+  const signResult = await phantom.signMessage(encoded, 'utf8');
 
-const signature = Array.from(signResult.signature);
+  if (!signResult?.signature) throw new Error('Assinatura inválida');
 
-setStep(3);
+  const signature = Array.from(signResult.signature);
 
-const loginRes = await fetch(`${API}/verify`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    wallet: S.wallet,
-    signature
-  })
-});
+  setStep(3);
 
-if (!loginRes.ok) throw new Error(`HTTP ${loginRes.status}`);
+  const loginRes = await fetch(`${API}/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      wallet: S.wallet,
+      signature
+    })
+  });
 
-const data = await loginRes.json();
+  if (!loginRes.ok) throw new Error(`HTTP ${loginRes.status}`);
 
-S.soulhash = data.soulhash;
-S.soul = {
-      soulhash:     data.soulhash,
-      wallet:       S.wallet,
+  const data = await loginRes.json();
+
+} catch (err) {
+  console.error(err);
+  setStatus(err.message || 'Erro na verificação','error');
+  btn.textContent = '✍ ASSINAR MENSAGEM';
+  setStep(2);
+}
+
+  S.soulhash = data.soulhash;
+
+  S.soul = {
+    soulhash: data.soulhash,
+    wallet:         S.wallet 
       luz:          data.luz         ?? 35,
       sombra:       data.sombra      ?? 25,
       equilibrio:   data.equilibrio  ?? 40,
