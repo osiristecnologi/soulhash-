@@ -595,51 +595,22 @@ async function signAndLogin(){
     const signResult = await phantom.signMessage(encoded, 'utf8');
     const signature  = toBase58(signResult.signature);
     setStep(3);
-    try {
-  stry {
-  setStatus('Verificando e gerando seu SoulHash...','info');
-  btn.textContent = 'VERIFICANDO...';
-
-  const phantom = window.phantom?.solana ?? window.solana;
-  if (!phantom) throw new Error('Phantom não encontrada');
-
-  if (!message) throw new Error('Mensagem inválida');
-
-  const encoded = new TextEncoder().encode(message);
-
-  const signResult = await phantom.signMessage(encoded, 'utf8');
-
-  if (!signResult?.signature) throw new Error('Assinatura inválida');
-
-  const signature = Array.from(signResult.signature);
-
-  setStep(3);
-
-  const loginRes = await fetch(`${API}/verify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      wallet: S.wallet,
-      signature
-    })
-  });
-
-  if (!loginRes.ok) throw new Error(`HTTP ${loginRes.status}`);
-
-  const data = await loginRes.json();
-
-} catch (err) {
-  console.error(err);
-  setStatus(err.message || 'Erro na verificação','error');
-  btn.textContent = '✍ ASSINAR MENSAGEM';
-  setStep(2);
-}
-
-  S.soulhash = data.soulhash;
-
-  S.soul = {
-    soulhash: data.soulhash,
-    wallet:         S.wallet 
+    setStatus('Verificando e gerando seu SoulHash...','info');
+    btn.textContent='VERIFICANDO...';
+    const loginRes = await fetch(`${API}/login`, {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify({ wallet: S.wallet, signature, nonce }),
+    });
+    if(!loginRes.ok){
+      const err = await loginRes.json().catch(()=>({}));
+      throw new Error(err.error || `HTTP ${loginRes.status}`);
+    }
+    const data = await loginRes.json();
+    S.soulhash = data.soulhash;
+    S.soul = {
+      soulhash:     data.soulhash,
+      wallet:       S.wallet,
       luz:          data.luz         ?? 35,
       sombra:       data.sombra      ?? 25,
       equilibrio:   data.equilibrio  ?? 40,
@@ -657,21 +628,16 @@ async function signAndLogin(){
     toast('✦ Identidade confirmada!');
     setTimeout(()=> enterUniverse(), 800);
   } catch(e){
-  const msg = (e.message || '').toLowerCase();
-
-  if (msg.includes('rejected') || msg.includes('cancel')) {
-    setStatus('Assinatura cancelada pelo usuário.','warn');
-  } else {
-    setStatus('Erro na verificação. Tente novamente.','error');
+    if(e.message?.toLowerCase().includes('rejected') || e.message?.toLowerCase().includes('cancel')){
+      setStatus('Assinatura cancelada pelo usuário.','warn');
+    } else {
+      await loginSimple();
+      return;
+    }
+    btn.disabled=false;
+    btn.textContent='✍ ASSINAR MENSAGEM';
+    setStep(2);
   }
-
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = '✍ ASSINAR MENSAGEM';
-  }
-
-  setStep(2);
-}
 }
 
 async function loginSimple(){
@@ -826,38 +792,23 @@ function updateLastGrid(grid){
 }
 
 async function doSpin(){
-  if (S.spinning) return;
-
-  const soul = S.soul || {};
-
-  if ((soul.energy ?? 7) <= 0) {
-    toast('Sem energia da alma!');
-    return;
-  }
-
-  S.spinning = true;
-
-  const btn = document.getElementById('btn-spin');
-  if (btn) btn.disabled = true;
-
+  if(S.spinning) return;
+  const soul=S.soul||{};
+  if((soul.energy??7)<=0){ toast('Sem energia da alma!'); return; }
+  S.spinning=true;
+  document.getElementById('btn-spin').disabled=true;
   sfxSpinStart();
-
   try {
     let data;
-
     try {
-      
-      const res = await fetch(`${API}/spin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wallet: S.wallet,
-        }),
+      const res=await fetch(`${API}/choice`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ wallet:S.wallet, choice:'spin' }),
       });
-
-      if (res.ok) {
-        const apiData = await res.json();
-        const localResult = computeLocalSpin();
+      if(res.ok){
+        const apiData=await res.json();
+        const localResult=computeLocalSpin();
         data={
           result:       localResult,
           hash_balance: (soul.hash_balance??100)+(localResult.isWin?localResult.reward:0),
@@ -1185,19 +1136,3 @@ document.getElementById('vol-slider').addEventListener('input', e=>{
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
