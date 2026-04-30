@@ -597,16 +597,28 @@ async function signAndLogin(){
     setStep(3);
     setStatus('Verificando e gerando seu SoulHash...','info');
     btn.textContent='VERIFICANDO...';
-    const loginRes = await fetch(`${API}/login`, {
-      method:  'POST',
-      headers: {'Content-Type':'application/json'},
-      body:    JSON.stringify({ wallet: S.wallet, signature, nonce }),
-    });
-    if(!loginRes.ok){
-      const err = await loginRes.json().catch(()=>({}));
-      throw new Error(err.error || `HTTP ${loginRes.status}`);
-    }
-    const data = await loginRes.json();
+    cconst phantom = window.phantom?.solana ?? window.solana;
+
+if (!phantom) throw new Error('Phantom não encontrada');
+
+const encoded = new TextEncoder().encode(message);
+
+const signResult = await phantom.signMessage(encoded, 'utf8');
+
+const signature = Array.from(signResult.signature);
+
+setStep(3);
+setStatus('Verificando e gerando seu SoulHash...','info');
+btn.textContent = 'VERIFICANDO...';
+
+const loginRes = await fetch(`${API}/verify`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    wallet: S.wallet,
+    signature
+  })
+});
     S.soulhash = data.soulhash;
     S.soul = {
       soulhash:     data.soulhash,
