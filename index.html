@@ -792,23 +792,38 @@ function updateLastGrid(grid){
 }
 
 async function doSpin(){
-  if(S.spinning) return;
-  const soul=S.soul||{};
-  if((soul.energy??7)<=0){ toast('Sem energia da alma!'); return; }
-  S.spinning=true;
-  document.getElementById('btn-spin').disabled=true;
+  if (S.spinning) return;
+
+  const soul = S.soul || {};
+
+  if ((soul.energy ?? 7) <= 0) {
+    toast('Sem energia da alma!');
+    return;
+  }
+
+  S.spinning = true;
+
+  const btn = document.getElementById('btn-spin');
+  if (btn) btn.disabled = true;
+
   sfxSpinStart();
+
   try {
     let data;
+
     try {
-      const res=await fetch(`${API}/choice`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ wallet:S.wallet, choice:'spin' }),
+      
+      const res = await fetch(`${API}/spin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: S.wallet,
+        }),
       });
-      if(res.ok){
-        const apiData=await res.json();
-        const localResult=computeLocalSpin();
+
+      if (res.ok) {
+        const apiData = await res.json();
+        const localResult = computeLocalSpin();
         data={
           result:       localResult,
           hash_balance: (soul.hash_balance??100)+(localResult.isWin?localResult.reward:0),
