@@ -455,9 +455,9 @@ const API = 'https://soulhash-api.onrender.com';
 
 // ─── Estado ───────────────────────────────────────────────
 const S = {
-  wallet:       null,   // endereço base58
-  soulhash:     null,   // recebido do /verify
-  sessionToken: null,   // ★ FIX 4: salvo em RAM, enviado ao /spin
+  wallet:       null,
+  soulhash:     null,
+  sessionToken: null,   // salvo em RAM, enviado ao /spin
   soul:         null,
   spinning:     false,
 };
@@ -466,13 +466,13 @@ const S = {
 (function(){
   const c=document.getElementById('bgc'),ctx=c.getContext('2d'),stars=[];
   function resize(){c.width=innerWidth;c.height=innerHeight;}
-  resize(); addEventListener('resize',resize);
-  for(let i=0;i<120;i++) stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.2+.2,a:Math.random(),da:(Math.random()*.004+.001)*(Math.random()>.5?1:-1),col:Math.random()>.85?'#c9a227':Math.random()>.7?'#8b5cf6':'#fff'});
+  resize();addEventListener('resize',resize);
+  for(let i=0;i<120;i++)stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.2+.2,a:Math.random(),da:(Math.random()*.004+.001)*(Math.random()>.5?1:-1),col:Math.random()>.85?'#c9a227':Math.random()>.7?'#8b5cf6':'#fff'});
   function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(.05,Math.min(.85,s.a+s.da));if(s.a<=.05||s.a>=.85)s.da*=-1;ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);ctx.fillStyle=s.col;ctx.globalAlpha=s.a;ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
   draw();
 })();
 
-// ─── UI ───────────────────────────────────────────────────
+// ─── UI Helpers ───────────────────────────────────────────
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0);}
 function setStep(n){[1,2,3].forEach(i=>{const d=document.getElementById('sd'+i);if(d)d.className='step-dot'+(i<n?' done':i===n?' active':'');});}
 function setStatus(msg,type='info'){const el=document.getElementById('status-box');el.textContent=msg;el.className='status-box '+type;el.style.display=msg?'block':'none';}
@@ -491,29 +491,18 @@ function toBase58(bytes){
 }
 
 // ─── Cards ────────────────────────────────────────────────
-// ★ FIX 5: mapeamento inclui os IDs do servidor (fire/water/earth/air)
-//           E os IDs visuais do frontend (luz/sombra/caos/empatia/equil)
-//           Qualquer ID desconhecido cai no fallback
 const CARDS=[
-  {id:'luz',    name:'LUZ',        emoji:'☀️', cls:'card-luz'    },
-  {id:'sombra', name:'SOMBRA',     emoji:'🌑', cls:'card-sombra' },
-  {id:'caos',   name:'CAOS',       emoji:'🔥', cls:'card-caos'   },
-  {id:'empatia',name:'EMPATIA',    emoji:'💚', cls:'card-empatia'},
-  {id:'equil',  name:'EQUILÍBRIO', emoji:'⚖️', cls:'card-equil'  },
+  {id:'luz',    name:'LUZ',        emoji:'☀️',cls:'card-luz'    },
+  {id:'sombra', name:'SOMBRA',     emoji:'🌑',cls:'card-sombra' },
+  {id:'caos',   name:'CAOS',       emoji:'🔥',cls:'card-caos'   },
+  {id:'empatia',name:'EMPATIA',    emoji:'💚',cls:'card-empatia'},
+  {id:'equil',  name:'EQUILÍBRIO', emoji:'⚖️',cls:'card-equil'  },
 ];
-
-// Mapa expandido: aceita IDs do servidor E IDs visuais
-const CARD_MAP = {
-  // IDs visuais do frontend
-  luz:     CARDS[0], sombra:  CARDS[1],
-  caos:    CARDS[2], empatia: CARDS[3], equil: CARDS[4],
-  // ★ IDs do servidor (fire/water/earth/air) → mapeados para visual
-  fire:    CARDS[2], // caos
-  water:   CARDS[0], // luz
-  earth:   CARDS[4], // equil
-  air:     CARDS[3], // empatia
+// CARD_MAP: aceita IDs do servidor (fire/water/earth/air) e visuais
+const CARD_MAP={
+  luz:CARDS[0], sombra:CARDS[1], caos:CARDS[2], empatia:CARDS[3], equil:CARDS[4],
+  fire:CARDS[2], water:CARDS[0], earth:CARDS[4], air:CARDS[3],
 };
-
 const EPIC_CARDS=[
   {emoji:'🌑',name:'Sombra Abissal',stats:'Dano +35% · Crítico +20% · 3 Turnos'},
   {emoji:'☀️',name:'Luz Divina',    stats:'Cura +50% · Escudo +30% · 4 Turnos'},
@@ -533,14 +522,13 @@ async function connectWallet(){
     return;
   }
   const btn=document.getElementById('btn-connect');
-  btn.disabled=true; btn.textContent='CONECTANDO...';
+  btn.disabled=true;btn.textContent='CONECTANDO...';
   setStatus('Aguardando aprovação na Phantom...','info');
   try {
     const resp=await phantom.connect();
     S.wallet=resp.publicKey.toString();
     const short=S.wallet.slice(0,6)+'...'+S.wallet.slice(-4);
-    const pill=document.getElementById('wallet-pill');
-    pill.style.display='flex';
+    document.getElementById('wallet-pill').style.display='flex';
     setText('wallet-addr-short','✓ '+short+' conectada');
     btn.textContent='✓ PHANTOM CONECTADA';
     sfxConnect();
@@ -556,79 +544,69 @@ async function connectWallet(){
 
 // ═══════════════════════════════════════════════════════════
 //  PASSO 2 — Challenge → SignMessage → Verify
-//
-//  FIX 1: /challenge retorna só { message }, sem nonce
-//  FIX 2: /verify recebe só { wallet, signature }
-//  FIX 4: sessionToken salvo em S.sessionToken
 // ═══════════════════════════════════════════════════════════
 async function signAndLogin(){
   if(!S.wallet){toast('Conecte a wallet primeiro');return;}
   const btn=document.getElementById('btn-sign');
-  btn.disabled=true; btn.textContent='AGUARDE...';
+  btn.disabled=true;btn.textContent='AGUARDE...';
   setStep(2);
 
   try {
-    // ── A: POST /challenge ──────────────────────────────
-    // Retorna: { message }  ← servidor não manda nonce
+    // A: POST /challenge → { message }
     setStatus('Solicitando desafio ao servidor...','info');
-    const challengeRes=await fetch(`${API}/challenge`,{
+    const chalRes=await fetch(`${API}/challenge`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({wallet:S.wallet}),
     });
-    if(!challengeRes.ok){
-      const err=await challengeRes.json().catch(()=>({}));
-      throw new Error(err.error||`/challenge HTTP ${challengeRes.status}`);
+    if(!chalRes.ok){
+      const e=await chalRes.json().catch(()=>({}));
+      throw new Error(e.error||`/challenge HTTP ${chalRes.status}`);
     }
-    // ★ FIX 1: desestrutura só { message }, sem nonce
-    const {message}=await challengeRes.json();
+    const {message}=await chalRes.json();
     if(!message) throw new Error('Servidor não retornou mensagem de desafio');
 
-    // ── B: phantom.signMessage ──────────────────────────
+    // B: phantom.signMessage
     setStatus('Assine a mensagem na Phantom...','info');
     btn.textContent='ASSINAR NA PHANTOM...';
     const phantom=window.phantom?.solana??window.solana;
-    const encoded=new TextEncoder().encode(message);
-    const signResult=await phantom.signMessage(encoded,'utf8');
+    const signResult=await phantom.signMessage(new TextEncoder().encode(message),'utf8');
     const signature=toBase58(signResult.signature);
 
-    // ── C: POST /verify ─────────────────────────────────
-    // ★ FIX 2: envia só { wallet, signature } — sem nonce, sem message
+    // C: POST /verify → { sessionToken, soulhash, balance, level, energy, maxEnergy }
     setStep(3);
     setStatus('Verificando assinatura...','info');
     btn.textContent='VERIFICANDO...';
     const verifyRes=await fetch(`${API}/verify`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({wallet:S.wallet, signature}),
+      body:JSON.stringify({wallet:S.wallet,signature}),
     });
     if(!verifyRes.ok){
-      const err=await verifyRes.json().catch(()=>({}));
-      throw new Error(err.error||`/verify HTTP ${verifyRes.status}`);
+      const e=await verifyRes.json().catch(()=>({}));
+      throw new Error(e.error||`/verify HTTP ${verifyRes.status}`);
     }
     const data=await verifyRes.json();
     if(!data.soulhash) throw new Error('Servidor não retornou soulhash');
 
-    // ── D: Salva estado ─────────────────────────────────
-    // ★ FIX 4: sessionToken salvo em RAM para enviar ao /spin
+    // D: Salva estado — usa 'balance' (nome do servidor v4)
     S.soulhash     = data.soulhash;
     S.sessionToken = data.sessionToken;
-    S.soul = {
+    S.soul={
       soulhash:    data.soulhash,
       wallet:      S.wallet,
-      luz:         35, sombra:25, equilibrio:40, caos:20, empatia:60,
-      hash_balance:data.hash_balance ??100,
-      energy:      data.energy       ??7,
-      maxEnergy:   data.maxEnergy    ??10,
-      level:       data.level        ??1,
-      stats:       data.stats        ??{xp:0},
-      ownedCards:  data.ownedCards   ??{},
-      dimProgress: data.dimProgress  ??0,
-      phasePassed: data.phasePassed  ??false,
-      gems:        data.gems         ??0,
+      hash_balance:data.balance    ??100,   // ★ SEMPRE do servidor (/verify retorna balance)
+      energy:      data.energy     ??7,
+      maxEnergy:   data.maxEnergy  ??10,
+      level:       data.level      ??1,
+      stats:       {xp:0},
+      ownedCards:  {},
+      dimProgress: 0,
+      phasePassed: false,
+      gems:        0,
     };
 
-    setStatus('✦ SoulHash verificado e vinculado à sua wallet!','success');
+    setStatus('✦ SoulHash gerado e vinculado à sua wallet!','success');
     toast('✦ Identidade confirmada!');
     setTimeout(()=>enterUniverse(),800);
 
@@ -638,7 +616,7 @@ async function signAndLogin(){
       setStatus('Assinatura cancelada pelo usuário.','warn');
     } else {
       setStatus('Erro: '+sanitize(e.message),'error');
-      console.error('[SoulHash] signAndLogin error:', e);
+      console.error('[SoulHash]',e);
     }
     btn.disabled=false;
     btn.textContent='✍ ASSINAR MENSAGEM';
@@ -673,78 +651,45 @@ function enterArenaFn(){
 // ─── Grid ─────────────────────────────────────────────────
 function makeCardEl(card,i){
   const el=document.createElement('div');
-  el.className=`arena-card ${card.cls}`; el.id=`card-${i}`;
-  const glow=document.createElement('div'); glow.className='card-glow';
-  const art=document.createElement('div');  art.className='card-art';  art.textContent=card.emoji;
-  const name=document.createElement('div'); name.className='card-name'; name.textContent=card.name;
+  el.className=`arena-card ${card.cls}`;el.id=`card-${i}`;
+  const glow=document.createElement('div');glow.className='card-glow';
+  const art=document.createElement('div');art.className='card-art';art.textContent=card.emoji;
+  const name=document.createElement('div');name.className='card-name';name.textContent=card.name;
   ['tl','tr','bl','br'].forEach(p=>{const c=document.createElement('span');c.className=`card-corner ${p}`;c.textContent='✦';el.appendChild(c);});
   el.appendChild(glow);el.appendChild(art);el.appendChild(name);
   return el;
 }
-function buildGrid(){
-  const g=document.getElementById('card-grid');
-  g.innerHTML='';
-  for(let i=0;i<9;i++) g.appendChild(makeCardEl(CARDS[i%CARDS.length],i));
-}
-function renderGrid(grid){
-  grid.forEach((id,i)=>{
-    // ★ FIX 5: CARD_MAP agora resolve IDs do servidor (fire/water/earth/air)
-    const card=CARD_MAP[id]||CARDS[0];
-    const old=document.getElementById(`card-${i}`);
-    if(old) old.replaceWith(makeCardEl(card,i));
-  });
-}
-function buildPips(energy,max){
-  const w=document.getElementById('epips');w.innerHTML='';
-  for(let i=0;i<max;i++){const p=document.createElement('div');p.className='epip'+(i<energy?' on':'');p.id=`epip-${i}`;w.appendChild(p);}
-  setText('energy-txt',`${energy}/${max}`);
-}
+function buildGrid(){const g=document.getElementById('card-grid');g.innerHTML='';for(let i=0;i<9;i++)g.appendChild(makeCardEl(CARDS[i%CARDS.length],i));}
+function renderGrid(grid){grid.forEach((id,i)=>{const card=CARD_MAP[id]||CARDS[0];const old=document.getElementById(`card-${i}`);if(old)old.replaceWith(makeCardEl(card,i));});}
+function buildPips(energy,max){const w=document.getElementById('epips');w.innerHTML='';for(let i=0;i<max;i++){const p=document.createElement('div');p.className='epip'+(i<energy?' on':'');p.id=`epip-${i}`;w.appendChild(p);}setText('energy-txt',`${energy}/${max}`);}
 function buildYourCards(ownedCards){
   const w=document.getElementById('your-cards');w.innerHTML='';
   const owned=Object.entries(ownedCards);
-  if(owned.length===0){
-    for(let i=0;i<5;i++){const mc=document.createElement('div');mc.className='mini-card';const s=document.createElement('span');s.style.cssText='font-size:18px;opacity:.2';s.textContent='🂠';const l=document.createElement('span');l.className='mini-lbl';l.textContent='VAZIA';mc.appendChild(s);mc.appendChild(l);w.appendChild(mc);}
-  } else {
-    owned.forEach(([id])=>{
-      // ★ FIX 5: CARD_MAP resolve IDs do servidor também
-      const card=CARD_MAP[id]; if(!card) return;
-      const mc=document.createElement('div');mc.className='mini-card';
-      const s=document.createElement('span');s.textContent=card.emoji;
-      const l=document.createElement('span');l.className='mini-lbl';l.textContent=card.name;
-      mc.appendChild(s);mc.appendChild(l);w.appendChild(mc);
-    });
-  }
+  if(owned.length===0){for(let i=0;i<5;i++){const mc=document.createElement('div');mc.className='mini-card';const s=document.createElement('span');s.style.cssText='font-size:18px;opacity:.2';s.textContent='🂠';const l=document.createElement('span');l.className='mini-lbl';l.textContent='VAZIA';mc.appendChild(s);mc.appendChild(l);w.appendChild(mc);}}
+  else{owned.forEach(([id])=>{const card=CARD_MAP[id];if(!card)return;const mc=document.createElement('div');mc.className='mini-card';const s=document.createElement('span');s.textContent=card.emoji;const l=document.createElement('span');l.className='mini-lbl';l.textContent=card.name;mc.appendChild(s);mc.appendChild(l);w.appendChild(mc);});}
 }
-function updateDim(progress){
-  const pct=Math.min(100,progress/1500*100);
-  document.getElementById('dim-fill').style.width=pct+'%';
-  setText('dim-cur',progress.toLocaleString('pt-BR'));
-}
+function updateDim(progress){const pct=Math.min(100,progress/1500*100);document.getElementById('dim-fill').style.width=pct+'%';setText('dim-cur',progress.toLocaleString('pt-BR'));}
 function updateHUD(){
-  const soul=S.soul; if(!soul) return;
+  const soul=S.soul;if(!soul)return;
   setText('hash-val',(soul.hash_balance??100).toLocaleString('pt-BR'));
   setText('gem-val',(soul.gems??0).toLocaleString('pt-BR'));
   setText('tb-lvl',soul.level??1);
   setText('energy-txt',`${soul.energy??7}/${soul.maxEnergy??10}`);
   for(let i=0;i<(soul.maxEnergy??10);i++){const p=document.getElementById(`epip-${i}`);if(p)p.className='epip'+(i<(soul.energy??7)?' on':'');}
   const xpPct=((soul.stats?.xp??0)%1000)/1000*100;
-  const xpEl=document.getElementById('tb-xpf'); if(xpEl) xpEl.style.width=Math.min(100,xpPct)+'%';
+  const xpEl=document.getElementById('tb-xpf');if(xpEl)xpEl.style.width=Math.min(100,xpPct)+'%';
   updateDim(soul.dimProgress??0);
   buildYourCards(soul.ownedCards??{});
 }
-function updateLastGrid(grid){
-  const cells=document.querySelectorAll('#last-grid .lc');
-  grid.forEach((id,i)=>{const c=CARD_MAP[id]||CARDS[0];if(cells[i])cells[i].textContent=c.emoji;});
-}
+function updateLastGrid(grid){const cells=document.querySelectorAll('#last-grid .lc');grid.forEach((id,i)=>{const c=CARD_MAP[id]||CARDS[0];if(cells[i])cells[i].textContent=c.emoji;});}
 
 // ═══════════════════════════════════════════════════════════
-//  SPIN — POST /spin com header x-session-token
-//
-//  FIX 3: header x-session-token adicionado
-//  FIX 4: S.sessionToken usado aqui
+//  SPIN — POST /spin
+//  Servidor v4 retorna FLAT: { grid, isWin, reward, balance }
+//  (sem result:{} wrapper)
 // ═══════════════════════════════════════════════════════════
 async function doSpin(){
-  if(S.spinning) return;
+  if(S.spinning)return;
   const soul=S.soul||{};
   if((soul.energy??7)<=0){toast('Sem energia da alma!');return;}
   S.spinning=true;
@@ -752,66 +697,91 @@ async function doSpin(){
   sfxSpinStart();
 
   try {
-    let data;
+    let grid,isWin,reward,winPositions=[],combo='none';
+
     if(S.sessionToken){
-      // ★ FIX 3: envia x-session-token no header
       const res=await fetch(`${API}/spin`,{
         method:'POST',
         headers:{
           'Content-Type':'application/json',
-          'x-session-token': S.sessionToken,   // ← obrigatório pelo servidor
+          'x-session-token':S.sessionToken,
         },
         body:JSON.stringify({}),
       });
+
       if(res.ok){
-        data=await res.json();
-        // Garante que result.isWin existe (server retorna result embutido)
-        if(!data.result) data.result=computeLocalSpin();
+        // Servidor v4 retorna flat: { grid, isWin, reward, balance }
+        const d=await res.json();
+        grid        = d.grid;
+        isWin       = d.isWin;
+        reward      = d.reward??0;
+        // Detecta winPositions (servidor não retorna, calcula local)
+        winPositions = isWin ? detectWinPositions(grid) : [];
+        combo        = isWin ? detectCombo(grid,winPositions) : 'none';
+        // Atualiza balance do servidor (fonte de verdade)
+        // ★ balance vem SEMPRE do servidor — nunca calculado no frontend
+        if(S.soul){
+          if(d.balance !== undefined) S.soul.hash_balance = d.balance;
+          // Se servidor não retornar balance, mantém o último valor conhecido
+        }
       } else {
-        // Token expirado ou inválido — fallback local
-        console.warn('[SoulHash] /spin retornou',res.status,'— usando fallback local');
-        data=computeFullSpin(soul);
+        // Fallback local se servidor falhar
+        const r=computeLocalSpin();
+        grid=r.grid;isWin=r.isWin;reward=r.reward;winPositions=r.winPositions;combo=r.combo;
       }
     } else {
-      // Sem sessão — modo demo local
-      data=computeFullSpin(soul);
+      const r=computeLocalSpin();
+      grid=r.grid;isWin=r.isWin;reward=r.reward;winPositions=r.winPositions;combo=r.combo;
     }
 
-    const result=data.result;
-
-    // Atualiza estado local com resposta do servidor
+    // Atualiza estado local
     if(S.soul){
-      S.soul.hash_balance = data.hash_balance ?? S.soul.hash_balance;
-      S.soul.energy       = data.energy       ?? Math.max(0,(S.soul.energy??7)-1);
-      S.soul.maxEnergy    = data.maxEnergy     ?? S.soul.maxEnergy;
-      S.soul.stats        = data.stats         ?? S.soul.stats;
-      S.soul.level        = data.level         ?? S.soul.level;
-      S.soul.dimProgress  = data.dimProgress   ?? S.soul.dimProgress;
-      S.soul.phasePassed  = data.phasePassed   ?? S.soul.phasePassed;
-      S.soul.ownedCards   = data.ownedCards    ?? S.soul.ownedCards;
+      S.soul.energy      = Math.max(0,(S.soul.energy??7)-1);
+      S.soul.stats.xp    = (S.soul.stats?.xp||0)+(isWin?40:10);
+      S.soul.dimProgress = (S.soul.dimProgress||0)+25+(isWin?50:0);
+      S.soul.level       = Math.floor(S.soul.stats.xp/1000)+1;
+      S.soul.phasePassed = isWin||S.soul.phasePassed;
+      if(isWin&&grid[0]) S.soul.ownedCards[grid[0]]=(S.soul.ownedCards[grid[0]]||0)+1;
+      // balance calculado SOMENTE pelo servidor — nunca localmente
     }
 
-    await animateSpin(result.grid);
-    renderGrid(result.grid);
+    const result={grid,isWin,winPositions,combo,reward};
+
+    await animateSpin(grid);
+    renderGrid(grid);
     await sleep(300);
 
-    if(result.isWin){
-      result.winPositions.forEach(i=>{const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-win');});
-      result.grid.forEach((_,i)=>{if(!result.winPositions.includes(i)){const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-lose');}});
+    if(isWin){
+      winPositions.forEach(i=>{const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-win');});
+      grid.forEach((_,i)=>{if(!winPositions.includes(i)){const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-lose');}});
     }
-    updateLastGrid(result.grid);
+
+    updateLastGrid(grid);
     updateHUD();
     await sleep(500);
-    showResult(result,data);
+    showResult(result);
 
   } catch(e){
     toast('Erro: '+sanitize(e.message));
-    console.error('[SoulHash] doSpin error:',e);
+    console.error('[SoulHash] doSpin:',e);
   } finally {
     S.spinning=false;
     document.getElementById('btn-spin').disabled=false;
     updateHUD();
   }
+}
+
+// Detecta posições vencedoras no grid
+function detectWinPositions(grid){
+  const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for(const [a,b,c] of lines) if(grid[a]&&grid[a]===grid[b]&&grid[b]===grid[c]) return [a,b,c];
+  return [];
+}
+function detectCombo(grid,wp){
+  if(!wp||wp.length===0) return 'none';
+  if(JSON.stringify(wp)===JSON.stringify([0,4,8])||JSON.stringify(wp)===JSON.stringify([2,4,6])) return 'diagonal';
+  if(wp.length===5) return 'cruz';
+  return '3linha';
 }
 
 // ─── Spin local (fallback) ────────────────────────────────
@@ -827,10 +797,7 @@ function computeLocalSpin(){
   else{CARDS.forEach((c,i)=>{if(i<9)grid[i]=c.id;});return {isWin:true,grid,combo:'todos',winPositions:[0,1,2,3,4,5,6,7,8],reward:60,cardWon:winner};}
 }
 function hasWinLocal(grid){return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(([a,b,c])=>grid[a]&&grid[a]===grid[b]&&grid[b]===grid[c]);}
-function computeFullSpin(soul){
-  const r=computeLocalSpin();
-  return {result:r,hash_balance:(soul.hash_balance??100)+(r.isWin?r.reward:0),energy:Math.max(0,(soul.energy??7)-1),maxEnergy:soul.maxEnergy??10,stats:{...(soul.stats||{}),xp:(soul.stats?.xp||0)+(r.isWin?40:10)},level:Math.floor(((soul.stats?.xp||0)+(r.isWin?40:10))/1000)+1,dimProgress:(soul.dimProgress??0)+25+(r.isWin?50:0),phasePassed:r.isWin?true:(soul.phasePassed??false),ownedCards:r.isWin&&r.cardWon?{...(soul.ownedCards||{}),[r.cardWon]:((soul.ownedCards||{})[r.cardWon]||0)+1}:(soul.ownedCards||{})};
-}
+
 async function animateSpin(finalGrid){
   return new Promise(resolve=>{
     const start=Date.now(),dur=1800;
@@ -844,7 +811,8 @@ async function animateSpin(finalGrid){
     tick();
   });
 }
-function showResult(result,data){
+
+function showResult(result){
   const ovl=document.getElementById('result-ovl'),box=document.getElementById('result-box'),isWin=result.isWin;
   box.className='result-box '+(isWin?'rbox-win':'rbox-lose');
   if(isWin)sfxWin();else sfxLose();
@@ -852,25 +820,57 @@ function showResult(result,data){
   setText('r-title',isWin?'VITÓRIA!':'DERROTA');
   setText('r-desc', isWin?'Você combinou 3 cartas!':'Nenhuma combinação. Tente novamente!');
   setText('r-combo',COMBO_LABELS[result.combo]||'');
-  setText('r-reward',isWin?`+${result.reward} Hash`:`+10 XP`);
+  setText('r-reward',isWin?`+${result.reward} Hash`:`+${result.reward} XP`);
   if(isWin){
     const epic=EPIC_CARDS[Math.floor(Math.random()*EPIC_CARDS.length)];
     const rb=document.getElementById('reward-box');rb.innerHTML='';
-    const emo=document.createElement('span');emo.className='rwd-emoji';emo.textContent=epic.emoji;
-    const nm=document.createElement('div');nm.className='rwd-name';nm.textContent=epic.name;
-    const st=document.createElement('div');st.className='rwd-stat';st.textContent=epic.stats;
-    rb.appendChild(emo);rb.appendChild(nm);rb.appendChild(st);
+    [['rwd-emoji','span',epic.emoji],['rwd-name','div',epic.name],['rwd-stat','div',epic.stats]].forEach(([cls,tag,txt])=>{const el=document.createElement(tag);el.className=cls;el.textContent=txt;rb.appendChild(el);});
     const cb=document.getElementById('combo-bonus');cb.innerHTML='';
     const n=document.createElement('div');n.style.cssText='font-family:Cinzel,serif;font-size:13px;color:var(--sombra);letter-spacing:1px;margin-bottom:5px';n.textContent=COMBO_LABELS[result.combo]||'';
     const d=document.createElement('div');d.style.cssText='font-size:12px;color:var(--text-d)';d.textContent=`+${result.reward} Hash`;
     cb.appendChild(n);cb.appendChild(d);
   }
-  setText('r-btn',isWin&&data.phasePassed?'✦ AVANÇAR NO UNIVERSO':isWin?'CONTINUAR':'TENTAR NOVAMENTE');
+  // Botão de saque aparece na vitória se tiver saldo
+  const phasePassed=S.soul?.phasePassed||false;
+  setText('r-btn',isWin&&phasePassed?'✦ AVANÇAR NO UNIVERSO':isWin?'CONTINUAR':'TENTAR NOVAMENTE');
   ovl.className='result-ovl on';
 }
 function closeResult(){
   document.getElementById('result-ovl').className='result-ovl';
   for(let i=0;i<9;i++){const el=document.getElementById(`card-${i}`);if(el){el.classList.remove('card-win','card-lose');}}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  REWARD / PAGAMENTO — POST /reward
+//  Body: { soulhash, amount }
+//  Retorna: { success, paidTo, amount, remainingBalance }
+// ═══════════════════════════════════════════════════════════
+async function requestReward(amount){
+  if(!S.soulhash||!S.sessionToken){toast('Faça login primeiro');return;}
+  const balance=S.soul?.hash_balance??0;
+  if(balance<amount){toast('Saldo insuficiente para saque');return;}
+
+  try {
+    const res=await fetch(`${API}/reward`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-session-token':S.sessionToken,
+      },
+      body:JSON.stringify({soulhash:S.soulhash,amount}),
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||`/reward HTTP ${res.status}`);}
+    const d=await res.json();
+    // ★ balance após saque vem do servidor
+    if(S.soul && d.remainingBalance !== undefined){
+      S.soul.hash_balance = d.remainingBalance;
+    }
+    updateHUD();
+    toast(`✦ Saque de ${amount} Hash enviado para ${d.paidTo?.slice(0,6)}...!`);
+  } catch(e){
+    toast('Erro no saque: '+sanitize(e.message));
+    console.error('[SoulHash] reward:',e);
+  }
 }
 
 // ─── Init ─────────────────────────────────────────────────
