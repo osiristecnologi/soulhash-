@@ -23,27 +23,35 @@ app.use(
 );
 
 // ─────────────────────────────
-// MEMORY STORE (Map usado corretamente)
+// MEMORY STORE (MAPS)
 // ─────────────────────────────
-const challenges = new Map(); // wallet → challenge
-const sessions = new Map();   // token → wallet
+const challenges = new Map();          // wallet → challenge
+const sessions = new Map();            // token → wallet
+
+const walletToSoulhash = new Map();    // wallet → soulhash
+const soulhashToWallet = new Map();    // soulhash → wallet
+
+const balances = new Map();            // soulhash → balance
 
 // ─────────────────────────────
-// CARDS (game)
+// GAME CARDS
+// ─────────────────────────────
 const CARDS = ["fire", "water", "earth", "air"];
 
 // ─────────────────────────────
 // HEALTHCHECK
+// ─────────────────────────────
 app.get("/", (req, res) => {
   res.json({
     status: "ok",
     service: "SoulHash API",
-    version: "v3-refactor",
+    version: "v4-payments",
   });
 });
 
 // ─────────────────────────────
-// CHALLENGE
+// CHALLENGE LOGIN
+// ─────────────────────────────
 app.post("/challenge", (req, res) => {
   const { wallet } = req.body;
 
@@ -84,31 +92,31 @@ app.post("/verify", (req, res) => {
   entry.used = true;
 
   // ─────────────────────────────
-  // 🔐 SOULHASH FIXO POR WALLET (CORRETO)
+  // SOULHASH
   // ─────────────────────────────
   const soulhash = crypto
     .createHash("sha256")
     .update(wallet.trim().toLowerCase())
     .digest("hex");
 
-  // ─────────────────────────────
-  // SESSION TOKEN
-  // ─────────────────────────────
+  // MAP RELATIONS
+  walletToSoulhash.set(wallet, soulhash);
+  soulhashToWallet.set(soulhash, wallet);
+
+  // INIT BALANCE
+  balances.set(soulhash, 100);
+
+  // SESSION
   const token = crypto.randomBytes(24).toString("hex");
   sessions.set(token, wallet);
 
   res.json({
     sessionToken: token,
-    soulhash: soulhash,
+    soulhash,
+    balance: balances.get(soulhash),
     level: 1,
-    hash_balance: 100,
     energy: 7,
     maxEnergy: 10,
-    stats: { xp: 0 },
-    dimProgress: 0,
-    phasePassed: false,
-    ownedCards: {},
-    gems: 0,
   });
 });
 
@@ -123,6 +131,8 @@ app.post("/spin", (req, res) => {
     return res.status(401).json({ error: "sem sessão" });
   }
 
+  const soulhash = walletToSoulhash.get(wallet);
+
   const grid = Array.from(
     { length: 9 },
     () => CARDS[Math.floor(Math.random() * CARDS.length)]
@@ -135,37 +145,60 @@ app.post("/spin", (req, res) => {
   ];
 
   let isWin = false;
-  let winPositions = [];
-  let combo = "none";
 
   for (const [a,b,c] of winLines) {
     if (grid[a] === grid[b] && grid[b] === grid[c]) {
       isWin = true;
-      winPositions = [a,b,c];
-      combo = "3linha";
       break;
     }
   }
 
+  const reward = isWin ? 50 : 10;
+
+  const currentBalance = balances.get(soulhash) || 0;
+  balances.set(soulhash, currentBalance + reward);
+
   res.json({
-    result: {
-      grid,
-      isWin,
-      winPositions,
-      combo,
-      reward: isWin ? 50 : 10,
-    },
-    hash_balance: 100 + (isWin ? 50 : 10),
-    energy: 6,
-    maxEnergy: 10,
-    level: 1,
-    dimProgress: isWin ? 200 : 50,
-    phasePassed: isWin && Math.random() > 0.5,
-    ownedCards: isWin ? { [grid[0]]: 1 } : {},
-    stats: { xp: isWin ? 120 : 30 },
+    grid,
+    isWin,
+    reward,
+    balance: balances.get(soulhash),
   });
 });
 
+// ─────────────────────────────
+// 💰 REWARD / PAYMENT SYSTEM
+// ─────────────────────────────
+app.post("/reward", (req, res) => {
+  const { soulhash, amount } = req.body;
+
+  const wallet = soulhashToWallet.get(soulhash);
+
+  if (!wallet) {
+    return res.status(404).json({ error: "jogador não encontrado" });
+  }
+
+  const balance = balances.get(soulhash) || 0;
+
+  if (balance < amount) {
+    return res.status(400).json({ error: "saldo insuficiente" });
+  }
+
+  balances.set(soulhash, balance - amount);
+
+  // SIMULAÇÃO DE PAGAMENTO ON-CHAIN
+  console.log(`💸 Pagando ${amount} para wallet: ${wallet}`);
+
+  res.json({
+    success: true,
+    paidTo: wallet,
+    amount,
+    remainingBalance: balances.get(soulhash),
+  });
+});
+
+// ─────────────────────────────
+// START SERVER
 // ─────────────────────────────
 app.listen(PORT, () => {
   console.log(`SoulHash API rodando na porta ${PORT}`);
