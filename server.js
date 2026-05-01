@@ -8,240 +8,325 @@ const rateLimit = require("express-rate-limit");
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ═══════════════════════════════════════
-// MIDDLEWARE
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  MIDDLEWARE
+// ═══════════════════════════════════════════════════════
 app.use(express.json({ limit: "10kb" }));
-app.use(cors());
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN || "*", methods: ["GET","POST"] }));
 app.use(helmet());
-app.use(rateLimit({ windowMs: 60_000, max: 120 }));
+app.use(rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false }));
 
 const authLimiter = rateLimit({ windowMs: 60_000, max: 15 });
 
-// ═══════════════════════════════════════
-// GAME CONFIG
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  CONSTANTES DO JOGO
+// ═══════════════════════════════════════════════════════
 const GAME = {
-  MAX_ENERGY: 10,
-  INITIAL_BALANCE: 100,
-  WIN_PROBABILITY: 0.30,
-  BONUS_WIN: 50,
-  BONUS_LOSE: 10,
-  MAGIC_BONUS: 20,
-  MAGIC_ENERGY: 2,
-  CHALLENGE_TTL: 1000 * 60 * 3, // 3 min
-  SESSION_TTL: 1000 * 60 * 60 * 2 // 2h
+  MAX_ENERGY:         10,
+  ENERGY_ON_LOGIN:    10,    // energia SEMPRE cheia ao login
+  BONUS_WIN_HASH:     50,
+  BONUS_LOSE_HASH:    10,
+  MAGIC_CARD_ENERGY:  20,    // bônus de energia ao acertar carta MAGIA no centro
+  MAGIC_CARD_HASH:    20,    // bônus de hash ao acertar carta MAGIA
+  INITIAL_BALANCE:    100,
+  WITHDRAW_MIN:       20,
+  WIN_PROBABILITY:    0.30,  // 30% chance
 };
 
+// Cartas disponíveis — MAGIA adicionada
 const CARDS = ["fire", "water", "earth", "air", "magic"];
 
-// ═══════════════════════════════════════
-// MEMORY STORE (trocar por Redis depois)
-// ═══════════════════════════════════════
-const challenges = new Map(); // wallet → {msg, exp}
-const sessions   = new Map(); // token → {wallet, exp}
+// ═══════════════════════════════════════════════════════
+//  STORAGE EM MEMÓRIA
+//  (produção: substituir por PostgreSQL + Redis)
+// ═══════════════════════════════════════════════════════
+const challenges       = new Map(); // wallet   → { message, used }
+const sessions         = new Map(); // token    → wallet
+const walletToSoulhash = new Map(); // wallet   → soulhash
+const soulhashToWallet = new Map(); // soulhash → wallet
+const balances         = new Map(); // soulhash → balance
+const energyStore      = new Map(); // soulhash → energy
+const statsStore       = new Map(); // soulhash → { spins, wins, xp }
 
-const walletToSoul = new Map();
-const soulToWallet = new Map();
-
-const balance = new Map();
-const energy  = new Map();
-const stats   = new Map();
-const lastSpin = new Map();
-
-// ═══════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════
-function now() { return Date.now(); }
+// ═══════════════════════════════════════════════════════
+//  UTILITÁRIOS
+// ═══════════════════════════════════════════════════════
 
 function isValidWallet(w) {
-  return typeof w === "string" && w.length > 10;
+  return typeof w === "string" && w.length >= 10 && w.length <= 64;
 }
 
-function generateSoul(wallet) {
+function generateSoulHash(wallet) {
   return crypto.createHash("sha256")
-    .update(wallet.toLowerCase())
+    .update(wallet.trim().toLowerCase())
     .digest("hex");
 }
 
-// sessão middleware
 function requireSession(req, res, next) {
-  const token = req.headers["x-session-token"];
-  const session = sessions.get(token);
-
-  if (!session) return res.status(401).json({ error: "Sessão inválida" });
-  if (session.exp < now()) {
-    sessions.delete(token);
-    return res.status(401).json({ error: "Sessão expirada" });
-  }
-
-  req.wallet = session.wallet;
-  req.soul   = walletToSoul.get(session.wallet);
+  const token  = req.headers["x-session-token"];
+  const wallet = sessions.get(token);
+  if (!wallet) return res.status(401).json({ error: "Sessão inválida ou expirada." });
+  req.wallet   = wallet;
+  req.soulhash = walletToSoulhash.get(wallet);
   next();
 }
 
-// limpeza automática leve
-setInterval(() => {
-  const t = now();
+// ═══════════════════════════════════════════════════════
+//  LÓGICA DO SPIN (somente servidor)
+// ═══════════════════════════════════════════════════════
+function computeSpin() {
+  const isWin = Math.random() < GAME.WIN_PROBABILITY;
 
-  for (const [k,v] of challenges)
-    if (v.exp < t) challenges.delete(k);
+  // Gera grid 3×3
+  const grid = Array.from({ length: 9 }, () =>
+    CARDS[Math.floor(Math.random() * CARDS.length)]
+  );
 
-  for (const [k,v] of sessions)
-    if (v.exp < t) sessions.delete(k);
+  const WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
 
-}, 60_000);
+  let winPositions = [];
+  let combo        = "none";
+  let magicCenter  = false;
 
-// ═══════════════════════════════════════
-// CHALLENGE
-// ═══════════════════════════════════════
-app.post("/challenge", authLimiter, (req,res)=>{
-  const { wallet } = req.body;
-  if (!isValidWallet(wallet))
-    return res.status(400).json({ error: "wallet inválida" });
+  if (isWin) {
+    // Força uma linha vencedora
+    const lineIdx = Math.floor(Math.random() * WIN_LINES.length);
+    const [a, b, c] = WIN_LINES[lineIdx];
 
-  const msg = `SoulHash:${wallet}:${crypto.randomUUID()}`;
+    // 15% de chance de ser carta MAGIA na vitória
+    const winner  = Math.random() < 0.15 ? "magic" : CARDS[Math.floor(Math.random() * (CARDS.length - 1))];
+    grid[a] = grid[b] = grid[c] = winner;
+    winPositions = [a, b, c];
+    combo        = winner === "magic" ? "magic_line" : "3linha";
 
-  challenges.set(wallet, {
-    msg,
-    exp: now() + GAME.CHALLENGE_TTL
-  });
-
-  res.json({ message: msg });
-});
-
-// ═══════════════════════════════════════
-// VERIFY (estrutura pronta Web3 real)
-// ═══════════════════════════════════════
-app.post("/verify", authLimiter, (req,res)=>{
-  const { wallet, signature } = req.body;
-
-  const ch = challenges.get(wallet);
-  if (!ch) return res.status(400).json({ error: "sem challenge" });
-  if (ch.exp < now()) return res.status(400).json({ error: "challenge expirado" });
-
-  // ⚠️ aqui é onde você integra MetaMask / Phantom
-  // (placeholder por enquanto)
-  const isValidSignature = true;
-
-  if (!isValidSignature)
-    return res.status(401).json({ error: "assinatura inválida" });
-
-  const soul = generateSoul(wallet);
-  const isNew = !walletToSoul.has(wallet);
-
-  walletToSoul.set(wallet, soul);
-  soulToWallet.set(soul, wallet);
-
-  if (isNew) {
-    balance.set(soul, GAME.INITIAL_BALANCE);
-    stats.set(soul, { spins: 0, wins: 0, xp: 0 });
+    // Carta MAGIA no centro (posição 4) = bônus especial
+    if (grid[4] === "magic" && isWin) magicCenter = true;
+  } else {
+    // Derrota: garante que não há linha vencedora acidental
+    let tries = 0;
+    while (tries++ < 50) {
+      let hasWin = false;
+      for (const [a,b,c] of WIN_LINES) {
+        if (grid[a] === grid[b] && grid[b] === grid[c]) { hasWin = true; break; }
+      }
+      if (!hasWin) break;
+      for (let i = 0; i < 9; i++) grid[i] = CARDS[Math.floor(Math.random() * CARDS.length)];
+    }
   }
 
-  energy.set(soul, GAME.MAX_ENERGY);
+  // Carta MAGIA no centro mesmo na derrota = bônus extra
+  if (grid[4] === "magic") magicCenter = true;
+
+  return { grid, isWin, winPositions, combo, magicCenter };
+}
+
+// ═══════════════════════════════════════════════════════
+//  ROTAS
+// ═══════════════════════════════════════════════════════
+
+// GET / — healthcheck
+app.get("/", (req, res) => {
+  res.json({ status: "ok", service: "SoulHash API", version: "v5" });
+});
+
+// ── POST /challenge ──────────────────────────────────
+app.post("/challenge", authLimiter, (req, res) => {
+  const { wallet } = req.body;
+  if (!isValidWallet(wallet)) return res.status(400).json({ error: "Wallet inválida." });
+
+  const message = `SoulHash:${wallet}:${Date.now()}`;
+  challenges.set(wallet, { message, used: false });
+
+  res.json({ message });
+});
+
+// ── POST /verify ─────────────────────────────────────
+app.post("/verify", authLimiter, (req, res) => {
+  const { wallet, signature } = req.body;
+
+  if (!isValidWallet(wallet)) return res.status(400).json({ error: "Wallet inválida." });
+  if (!signature)             return res.status(401).json({ error: "Assinatura ausente." });
+
+  const entry = challenges.get(wallet);
+  if (!entry)      return res.status(400).json({ error: "Sem challenge. Chame /challenge." });
+  if (entry.used)  return res.status(400).json({ error: "Challenge já utilizado." });
+
+  entry.used = true;
+
+  // Gera/recupera soulhash
+  const soulhash = generateSoulHash(wallet);
+  const isNew    = !walletToSoulhash.has(wallet);
+
+  walletToSoulhash.set(wallet, soulhash);
+  soulhashToWallet.set(soulhash, wallet);
+
+  // Inicializa dados se novo
+  if (isNew) {
+    balances.set(soulhash, GAME.INITIAL_BALANCE);
+    statsStore.set(soulhash, { spins: 0, wins: 0, xp: 0 });
+  }
+
+  // ★ ENERGIA SEMPRE CHEIA AO LOGIN (servidor é fonte de verdade)
+  energyStore.set(soulhash, GAME.MAX_ENERGY);
 
   const token = crypto.randomBytes(24).toString("hex");
-
-  sessions.set(token, {
-    wallet,
-    exp: now() + GAME.SESSION_TTL
-  });
+  sessions.set(token, wallet);
 
   res.json({
     sessionToken: token,
-    soul,
-    balance: balance.get(soul),
-    energy: GAME.MAX_ENERGY,
-    maxEnergy: GAME.MAX_ENERGY,
-    stats: stats.get(soul)
+    soulhash,
+    isNew,
+    balance:    balances.get(soulhash),
+    energy:     GAME.MAX_ENERGY,      // ★ sempre cheia
+    maxEnergy:  GAME.MAX_ENERGY,
+    level:      calcLevel(statsStore.get(soulhash)?.xp ?? 0),
+    stats:      statsStore.get(soulhash),
   });
 });
 
-// ═══════════════════════════════════════
-// SPIN (mais seguro)
-// ═══════════════════════════════════════
-function spin() {
-  const isWin = crypto.randomInt(0,100) < (GAME.WIN_PROBABILITY * 100);
+// ── POST /spin ───────────────────────────────────────
+app.post("/spin", requireSession, (req, res) => {
+  const { soulhash } = req;
 
-  const grid = Array.from({length:9}, () =>
-    CARDS[crypto.randomInt(0, CARDS.length)]
-  );
-
-  if (isWin) {
-    const win = CARDS[crypto.randomInt(0, CARDS.length)];
-    const line = [0,1,2];
-
-    for (const i of line) grid[i] = win;
-
-    return { grid, isWin, win };
+  // Verifica energia
+  const currentEnergy = energyStore.get(soulhash) ?? 0;
+  if (currentEnergy <= 0) {
+    return res.status(400).json({ error: "Sem energia. Aguarde recarga." });
   }
 
-  return { grid, isWin, win: null };
-}
+  // Calcula resultado (somente servidor)
+  const { grid, isWin, winPositions, combo, magicCenter } = computeSpin();
 
-// anti spam spin
-function canSpin(soul) {
-  const last = lastSpin.get(soul) || 0;
-  return now() - last > 1500;
-}
+  // Atualiza energia (servidor controla)
+  const newEnergy = Math.max(0, currentEnergy - 1);
+  energyStore.set(soulhash, newEnergy);
 
-// ═══════════════════════════════════════
-// SPIN ROUTE
-// ═══════════════════════════════════════
-app.post("/spin", requireSession, (req,res)=>{
-  const soul = req.soul;
+  // Calcula recompensa
+  let reward        = isWin ? GAME.BONUS_WIN_HASH : GAME.BONUS_LOSE_HASH;
+  let energyBonus   = 0;
+  let magicBonus    = false;
 
-  if (!canSpin(soul))
-    return res.status(429).json({ error: "muito rápido" });
+  if (magicCenter) {
+    // Carta MAGIA no centro = bônus especial
+    reward      += GAME.MAGIC_CARD_HASH;
+    energyBonus  = GAME.MAGIC_CARD_ENERGY;
+    magicBonus   = true;
 
-  let e = energy.get(soul) ?? 0;
-  if (e <= 0)
-    return res.status(400).json({ error: "sem energia" });
+    // Aplica bônus de energia (não ultrapassa máximo)
+    const newEnergyWithBonus = Math.min(GAME.MAX_ENERGY, newEnergy + energyBonus);
+    energyStore.set(soulhash, newEnergyWithBonus);
+  }
 
-  const result = spin();
+  // Atualiza balance (backend é fonte de verdade)
+  const currentBalance = balances.get(soulhash) ?? 0;
+  const newBalance     = currentBalance + reward;
+  balances.set(soulhash, newBalance);
 
-  energy.set(soul, e - 1);
-  lastSpin.set(soul, now());
-
-  let reward = result.isWin ? GAME.BONUS_WIN : GAME.BONUS_LOSE;
-
-  const b = balance.get(soul) || 0;
-  balance.set(soul, b + reward);
-
-  const st = stats.get(soul);
-  st.spins++;
-  if (result.isWin) st.wins++;
-  st.xp += result.isWin ? 40 : 10;
-
-  stats.set(soul, st);
+  // Atualiza stats
+  const stats = statsStore.get(soulhash) ?? { spins: 0, wins: 0, xp: 0 };
+  stats.spins++;
+  if (isWin) stats.wins++;
+  stats.xp += isWin ? 40 : 10;
+  statsStore.set(soulhash, stats);
 
   res.json({
-    ...result,
+    grid,
+    isWin,
+    winPositions,
+    combo,
     reward,
-    balance: balance.get(soul),
-    energy: energy.get(soul),
-    stats: st
+    magicBonus,        // ★ indica bônus da carta MAGIA
+    magicCenter,       // ★ carta MAGIA estava no centro
+    energyBonus,       // ★ energia bônus recebida
+    balance:  newBalance,
+    energy:   energyStore.get(soulhash),
+    maxEnergy: GAME.MAX_ENERGY,
+    level:    calcLevel(stats.xp),
+    stats,
   });
 });
 
-// ═══════════════════════════════════════
-// ME
-// ═══════════════════════════════════════
-app.get("/me", requireSession, (req,res)=>{
-  const soul = req.soul;
-  const st = stats.get(soul);
+// ── POST /reward ─────────────────────────────────────
+app.post("/reward", requireSession, (req, res) => {
+  const { soulhash, wallet } = req;
+  const { amount }           = req.body;
+
+  if (!amount || isNaN(amount) || amount < GAME.WITHDRAW_MIN) {
+    return res.status(400).json({
+      error: `Valor mínimo de saque é ${GAME.WITHDRAW_MIN} Hash.`,
+    });
+  }
+
+  const balance = balances.get(soulhash) ?? 0;
+  if (balance < amount) {
+    return res.status(400).json({
+      error: "Saldo insuficiente.",
+      balance,
+    });
+  }
+
+  // Debita balance (backend controla)
+  const newBalance = balance - amount;
+  balances.set(soulhash, newBalance);
+
+  // ── Aqui entra futura integração Solana ──────────
+  // const txHash = await sendSolanaTransaction(wallet, amount);
+  // Por agora: simulação
+  const simulatedTx = `SIM_${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
+  console.log(`[REWARD] ${amount} Hash → ${wallet} | tx: ${simulatedTx}`);
 
   res.json({
-    soul,
-    balance: balance.get(soul),
-    energy: energy.get(soul),
-    stats: st
+    success:          true,
+    paidTo:           wallet,
+    amount,
+    remainingBalance: newBalance,
+    txSimulated:      simulatedTx,   // substituir por txHash real
+    // solanaReady:   true,          // ativar quando integrar Solana Pay
   });
 });
 
-// ═══════════════════════════════════════
-// START
-// ═══════════════════════════════════════
-app.listen(PORT, ()=>{
-  console.log("SoulHash API v6 rodando na porta", PORT);
+// ── POST /me — estado atual da sessão ────────────────
+app.get("/me", requireSession, (req, res) => {
+  const { soulhash, wallet } = req;
+  const stats = statsStore.get(soulhash) ?? { spins: 0, wins: 0, xp: 0 };
+  res.json({
+    soulhash,
+    wallet:   wallet.slice(0,6) + "..." + wallet.slice(-4),
+    balance:  balances.get(soulhash) ?? 0,
+    energy:   energyStore.get(soulhash) ?? 0,
+    maxEnergy: GAME.MAX_ENERGY,
+    level:    calcLevel(stats.xp),
+    stats,
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function calcLevel(xp) {
+  return Math.floor(xp / 1000) + 1;
+}
+
+// 404
+app.use((req, res) => {
+  res.status(404).json({ error: `Rota ${req.method} ${req.path} não encontrada.` });
+});
+
+// ═══════════════════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════════════════
+app.listen(PORT, () => {
+  console.log(`\n╔════════════════════════════════════════════╗`);
+  console.log(`║  SoulHash API v5  —  Porta ${PORT}             ║`);
+  console.log(`╚════════════════════════════════════════════╝`);
+  console.log(`  GET  /`);
+  console.log(`  POST /challenge  → desafio para Phantom`);
+  console.log(`  POST /verify     → autentica + energia cheia`);
+  console.log(`  POST /spin       → gira cartas`);
+  console.log(`  POST /reward     → saque de hash`);
+  console.log(`  GET  /me         → estado da sessão\n`);
 });
