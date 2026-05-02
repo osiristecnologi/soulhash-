@@ -487,6 +487,30 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
       <div class="tb-cur">
         <div class="cpill"><div class="cpill-i">💎</div><div class="cpill-v" id="gem-val">0</div></div>
         <div class="cpill"><div class="cpill-i">🔷</div><div class="cpill-v" id="hash-val">100</div></div>
+        <div class="menu-wrap">
+          <button class="btn-menu" id="btn-menu" onclick="toggleMenu()">⚙ MENU</button>
+          <div class="dropdown-menu" id="dropdown-menu">
+            <div class="dm-header">
+              <div class="dm-soulhash" id="dm-soulhash-val">—</div>
+              <div class="dm-wallet" id="dm-wallet-val">—</div>
+            </div>
+            <div class="dm-balance">
+              <div class="dm-bal-lbl">SALDO</div>
+              <div class="dm-bal-val"><span id="dm-balance-val">0</span> Hash</div>
+            </div>
+            <button class="dm-item" onclick="menuToggleSound()">
+              <span id="dm-sound-icon">🔊</span>
+              <span id="dm-sound-lbl">Silenciar Música</span>
+            </button>
+            <button class="dm-item" onclick="openWithdraw()">
+              <span>💸</span><span>Sacar Hash</span>
+            </button>
+            <div class="dm-sep"></div>
+            <button class="dm-item danger" onclick="menuLogout()">
+              <span>🚪</span><span>Sair</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
