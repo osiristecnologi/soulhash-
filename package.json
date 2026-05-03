@@ -1,7 +1,7 @@
 {
   "name": "soulhash",
   "version": "1.0.0",
-  "description": "SoulHash Arena - Web3 card game com integração Phantom Wallet e economia Hash",
+  "description": "SoulHash  - Web3 card game com integração Phantom Wallet e economia Hash",
   "main": "server.js",
 
   "scripts": {
