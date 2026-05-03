@@ -1,1205 +1,269 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>SoulHash — Sua Alma. Sua História. Seu Legado.</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@700&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-:root{
-  --gold:#c9a227;--gold-l:#f5d060;--gold-d:#6a4f0a;
-  --bg:#05040c;--panel:#0c0a18;--panel2:#110e1f;
-  --border:#1a1630;--border2:#28203e;
-  --text:#d8d0c0;--text-d:#403860;
-  --luz:#f5c842;--sombra:#9b59f5;--caos:#e84040;
-  --empatia:#32d46a;--equil:#38b8f0;
-  --energy:#c026d3;--green:#22c55e;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'EB Garamond',Georgia,serif;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(139,92,246,.06),transparent 65%),
-             radial-gradient(ellipse 40% 60% at 0% 60%,rgba(232,64,64,.04),transparent 60%),
-             radial-gradient(ellipse 50% 40% at 100% 100%,rgba(201,162,39,.04),transparent 55%);}
-canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
-
-.screen{display:none;min-height:100vh;position:relative;z-index:1}
-.screen.active{display:flex}
-
-#s-load{align-items:center;justify-content:center;flex-direction:column;gap:22px;transition:opacity .5s}
-.load-rune{font-size:52px;color:var(--gold);animation:spin 4s linear infinite;display:inline-block;text-shadow:0 0 40px var(--gold)}
-.load-title{font-family:'Cinzel Decorative',serif;font-size:clamp(18px,4vw,34px);color:var(--gold);letter-spacing:3px;text-shadow:0 0 30px rgba(201,162,39,.4)}
-.load-sub{font-family:'Cinzel',serif;font-size:9px;letter-spacing:8px;color:var(--text-d);animation:blink 2s ease-in-out infinite}
-.load-bar{width:180px;height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
-.load-bar-f{height:100%;background:linear-gradient(90deg,var(--gold),var(--sombra));animation:lf 2s ease forwards}
-@keyframes lf{from{width:0}to{width:100%}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
-
-#s-connect{align-items:center;justify-content:center;flex-direction:column;padding:40px 20px;min-height:100vh}
-.connect-wrap{max-width:460px;width:100%;text-align:center}
-
-.sigil{width:100px;height:100px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;position:relative;box-shadow:0 0 50px rgba(201,162,39,.3),inset 0 0 20px rgba(201,162,39,.05);animation:pulse-s 3s ease-in-out infinite;}
-.sigil::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(201,162,39,.1)}
-.sigil svg{width:56px;height:56px}
-@keyframes pulse-s{0%,100%{box-shadow:0 0 30px rgba(201,162,39,.2)}50%{box-shadow:0 0 70px rgba(201,162,39,.5),inset 0 0 30px rgba(201,162,39,.08)}}
-
-.brand{font-family:'Cinzel Decorative',serif;font-size:clamp(24px,5vw,42px);color:var(--gold);letter-spacing:3px;text-shadow:0 0 30px rgba(201,162,39,.4);margin-bottom:6px;text-align:center}
-.brand-sub{font-family:'Cinzel',serif;font-size:9px;letter-spacing:7px;color:var(--text-d);margin-bottom:44px;text-align:center}
-
-.connect-card{background:linear-gradient(155deg,#110d20,#080614);border:1px solid var(--border2);border-radius:20px;padding:36px;max-width:460px;width:100%;position:relative;overflow:hidden;}
-.connect-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-
-.steps{display:flex;align-items:center;margin-bottom:28px}
-.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative}
-.step:not(:last-child)::after{content:'';position:absolute;top:13px;left:50%;width:100%;height:1px;background:var(--border2);z-index:0}
-.step-dot{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-d);background:var(--bg);position:relative;z-index:1;transition:all .4s;font-family:'Cinzel',serif}
-.step-dot.done{border-color:var(--gold);color:var(--gold);background:rgba(201,162,39,.1)}
-.step-dot.active{border-color:var(--sombra);color:var(--sombra);background:rgba(139,92,246,.1);box-shadow:0 0 12px rgba(139,92,246,.3)}
-.step-lbl{font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;color:var(--text-d)}
-
-.cc-title{font-family:'Cinzel',serif;font-size:14px;letter-spacing:3px;color:var(--gold-l);margin-bottom:8px;text-align:center}
-.cc-desc{font-size:14px;color:var(--text-d);line-height:1.8;margin-bottom:26px;text-align:center}
-.cc-desc strong{color:rgba(171,159,242,.8)}
-
-.btn-phantom{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(135deg,#9f8de8,#6d56c9);border:none;border-radius:12px;padding:17px;color:#fff;font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;font-weight:600;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;}
-.btn-phantom::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18),transparent);opacity:0;transition:.3s}
-.btn-phantom:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(109,86,201,.45)}
-.btn-phantom:hover::before{opacity:1}
-.btn-phantom:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.ph-badge{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-
-.wallet-pill{display:none;margin-top:14px;background:rgba(255,255,255,.03);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;align-items:center;gap:10px}
-.wp-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex-shrink:0}
-.wp-addr{font-family:'Cinzel',serif;font-size:11px;color:var(--text-d)}
-
-.btn-sign{display:none;width:100%;margin-top:14px;background:transparent;border:1px solid var(--gold);border-radius:10px;padding:14px;color:var(--gold);font-family:'Cinzel',serif;font-size:12px;letter-spacing:4px;cursor:pointer;transition:all .3s}
-.btn-sign:hover{background:rgba(201,162,39,.1);box-shadow:0 0 24px rgba(201,162,39,.25)}
-.btn-sign:disabled{opacity:.5;cursor:wait}
-
-.status-box{margin-top:16px;padding:13px 15px;border-radius:10px;font-size:13px;line-height:1.7;display:none}
-.status-box.info   {background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);color:#c4b5fd}
-.status-box.success{background:rgba(34,197,94,.06); border:1px solid rgba(34,197,94,.2);color:#86efac}
-.status-box.error  {background:rgba(239,68,68,.06);  border:1px solid rgba(239,68,68,.2);color:#fca5a5}
-.status-box.warn   {background:rgba(245,158,11,.06); border:1px solid rgba(245,158,11,.2);color:#fcd34d}
-
-#s-welcome{align-items:center;justify-content:center;flex-direction:column;padding:40px 20px;min-height:100vh;text-align:center}
-.wlc-orb{width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,39,.3),rgba(139,92,246,.15),transparent);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Cinzel Decorative',serif;font-size:40px;color:var(--gold);box-shadow:0 0 60px rgba(201,162,39,.4);animation:pulse-s 3s ease-in-out infinite;margin-bottom:28px}
-.wlc-title{font-family:'Cinzel Decorative',serif;font-size:clamp(20px,4vw,34px);color:var(--gold);letter-spacing:3px;text-shadow:0 0 30px rgba(201,162,39,.4);margin-bottom:6px}
-.wlc-sub{font-family:'Cinzel',serif;font-size:9px;letter-spacing:7px;color:var(--text-d);margin-bottom:28px}
-.bonus-card{background:linear-gradient(155deg,#110d20,#080614);border:1px solid var(--border2);border-radius:20px;padding:36px 40px;max-width:480px;width:100%;position:relative;overflow:hidden}
-.bonus-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.bonus-ribbon{font-family:'Cinzel',serif;font-size:8px;letter-spacing:5px;color:var(--gold-d);margin-bottom:18px;display:flex;align-items:center;gap:10px;justify-content:center}
-.bonus-ribbon::before,.bonus-ribbon::after{content:'';flex:1;height:1px;background:var(--border2)}
-.bonus-hash-display{background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.2);border-radius:12px;padding:16px;margin-bottom:20px;}
-.bhd-label{font-family:'Cinzel',serif;font-size:8px;letter-spacing:4px;color:var(--gold-d);margin-bottom:8px}
-.bhd-hash{font-family:'Cinzel',serif;font-size:clamp(14px,3.5vw,20px);color:var(--gold-l);letter-spacing:3px;text-shadow:0 0 16px rgba(201,162,39,.4);margin-bottom:4px}
-.bhd-wallet{font-size:11px;color:var(--text-d)}
-.bonus-num{font-family:'Cinzel',serif;font-size:64px;color:var(--gold);text-shadow:0 0 40px rgba(201,162,39,.7);line-height:1;margin-bottom:4px;animation:bncin .6s cubic-bezier(.34,1.56,.64,1) .3s both}
-@keyframes bncin{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
-.bonus-unit{font-family:'Cinzel',serif;font-size:12px;letter-spacing:6px;color:var(--gold-d);margin-bottom:18px}
-.bonus-desc{font-size:14px;color:var(--text-d);line-height:1.8;margin-bottom:26px}
-.btn-gold{width:100%;background:linear-gradient(135deg,#c9a227,#a07818);border:none;border-radius:12px;padding:17px;color:#000;font-family:'Cinzel',serif;font-size:13px;letter-spacing:4px;font-weight:700;cursor:pointer;transition:all .3s}
-.btn-gold:hover{transform:translateY(-2px);box-shadow:0 10px 40px rgba(201,162,39,.4)}
-
-#s-arena{flex-direction:column;min-height:100vh}
-.topbar{height:60px;background:rgba(6,4,14,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);gap:10px}
-.tb-player{display:flex;align-items:center;gap:10px;min-width:170px}
-.tb-av{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#2a1840,#0e0820);border:1.5px solid var(--sombra);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px rgba(139,92,246,.4);flex-shrink:0}
-.tb-hash-lbl{font-family:'Cinzel',serif;font-size:11px;color:var(--gold-l);letter-spacing:1px}
-.tb-lvl-lbl{font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--text-d);margin-top:2px}
-.tb-xp{width:70px;height:2px;background:rgba(255,255,255,.08);border-radius:1px;margin-top:3px;overflow:hidden}
-.tb-xp-f{height:100%;background:linear-gradient(90deg,var(--gold),var(--sombra));border-radius:1px;transition:width .8s ease}
-.tb-center{text-align:center;flex:1}
-.tb-title{font-family:'Cinzel Decorative',serif;font-size:clamp(13px,2.5vw,19px);color:var(--gold);letter-spacing:2px;text-shadow:0 0 20px rgba(201,162,39,.35)}
-.tb-sub{font-family:'Cinzel',serif;font-size:7px;letter-spacing:5px;color:var(--text-d)}
-.tb-cur{display:flex;align-items:center;gap:8px;min-width:170px;justify-content:flex-end}
-.cpill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:20px;padding:4px 11px}
-.cpill-i{font-size:13px}
-.cpill-v{font-family:'Cinzel',serif;font-size:12px;color:var(--gold-l)}
-
-.arena-layout{display:grid;grid-template-columns:178px 1fr 208px;flex:1;min-height:calc(100vh - 60px)}
-.lpanel{background:var(--panel);border-right:1px solid var(--border);padding:15px 12px;overflow-y:auto}
-.lp-sec{margin-bottom:18px}
-.lp-title{font-family:'Cinzel',serif;font-size:8px;letter-spacing:5px;color:var(--text-d);padding-bottom:7px;border-bottom:1px solid var(--border);margin-bottom:10px}
-.el-row{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.03)}
-.el-ico{font-size:18px;width:22px;flex-shrink:0;margin-top:1px}
-.el-name{font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;margin-bottom:2px}
-.el-desc{font-size:11px;color:var(--text-d);line-height:1.4}
-.combo-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03)}
-.combo-name{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;margin-bottom:2px}
-.combo-desc{font-size:10px;color:var(--text-d);line-height:1.4}
-
-.center-col{padding:18px;display:flex;flex-direction:column;align-items:center;gap:16px}
-.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%;max-width:430px}
-.arena-card{aspect-ratio:3/4;border-radius:12px;border:2px solid var(--border2);background:var(--panel2);position:relative;overflow:hidden;transition:transform .15s}
-.card-glow{position:absolute;inset:0;border-radius:10px;opacity:.3;transition:opacity .4s}
-.card-art{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;z-index:1}
-.card-name{position:absolute;bottom:0;left:0;right:0;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;text-align:center;padding:6px 4px 8px;background:linear-gradient(to top,rgba(0,0,0,.88),transparent);z-index:2}
-.card-corner{position:absolute;font-size:7px;color:var(--gold);opacity:.3;z-index:3}
-.card-corner.tl{top:5px;left:5px}.card-corner.tr{top:5px;right:5px}
-.card-corner.bl{bottom:18px;left:5px}.card-corner.br{bottom:18px;right:5px}
-.card-luz    .card-glow{background:radial-gradient(circle at 50% 40%,rgba(245,200,66,.65),transparent 70%)}
-.card-sombra .card-glow{background:radial-gradient(circle at 50% 40%,rgba(155,89,245,.65),transparent 70%)}
-.card-caos   .card-glow{background:radial-gradient(circle at 50% 40%,rgba(232,64,64,.65),transparent 70%)}
-.card-empatia .card-glow{background:radial-gradient(circle at 50% 40%,rgba(50,212,106,.65),transparent 70%)}
-.card-equil  .card-glow{background:radial-gradient(circle at 50% 40%,rgba(56,184,240,.65),transparent 70%)}
-.card-luz    {border-color:rgba(245,200,66,.35)}.card-luz    .card-name{color:var(--luz)}
-.card-sombra {border-color:rgba(155,89,245,.35)}.card-sombra .card-name{color:var(--sombra)}
-.card-caos   {border-color:rgba(232,64,64,.35)  }.card-caos   .card-name{color:var(--caos)}
-.card-empatia{border-color:rgba(50,212,106,.35) }.card-empatia .card-name{color:var(--empatia)}
-.card-equil  {border-color:rgba(56,184,240,.35) }.card-equil  .card-name{color:var(--equil)}
-.card-win{box-shadow:0 0 0 3px var(--gold),0 0 28px rgba(201,162,39,.6)!important;animation:win-p 1s ease-in-out infinite}
-@keyframes win-p{0%,100%{box-shadow:0 0 0 3px var(--gold),0 0 28px rgba(201,162,39,.4)}50%{box-shadow:0 0 0 3px var(--gold),0 0 55px rgba(201,162,39,.9)}}
-.card-lose{opacity:.4;filter:grayscale(.8)}
-
-.spin-area{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:430px}
-.btn-spin{width:190px;padding:15px 0;background:linear-gradient(135deg,#a020d0,#7010a0);border:2px solid #c030f0;border-radius:40px;font-family:'Cinzel Decorative',serif;font-size:19px;color:#fff;letter-spacing:2px;cursor:pointer;box-shadow:0 0 28px rgba(160,32,208,.5);transition:all .3s}
-.btn-spin:hover:not(:disabled){transform:translateY(-3px) scale(1.02);box-shadow:0 0 50px rgba(160,32,208,.7)}
-.btn-spin:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-.spin-lbl{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;color:var(--text-d)}
-.epips{display:flex;gap:4px}
-.epip{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--border2);background:rgba(255,255,255,.04);transition:all .3s}
-.epip.on{background:var(--energy);border-color:var(--energy);box-shadow:0 0 8px var(--energy)}
-
-.your-cards{display:flex;align-items:center;gap:7px;width:100%;max-width:430px;overflow-x:auto;padding:3px 0}
-.mini-card{width:50px;height:66px;border-radius:8px;flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:18px;cursor:pointer;transition:transform .2s}
-.mini-card:hover{transform:translateY(-4px)}
-.mini-lbl{font-family:'Cinzel',serif;font-size:7px;color:var(--text-d)}
-
-.dim-box{width:100%;max-width:430px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px}
-.dim-lbl{font-family:'Cinzel',serif;font-size:8px;letter-spacing:4px;color:var(--text-d);text-align:center;margin-bottom:5px}
-.dim-name{font-family:'Cinzel',serif;font-size:12px;color:var(--gold-l);text-align:center;margin-bottom:6px}
-.dim-track{height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:4px}
-.dim-fill{height:100%;background:linear-gradient(90deg,var(--sombra),var(--energy));border-radius:4px;transition:width 1s ease}
-.dim-txt{font-family:'Cinzel',serif;font-size:9px;color:var(--text-d);text-align:center;letter-spacing:1px}
-
-.rpanel{background:var(--panel);border-left:1px solid var(--border);padding:15px 13px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
-.rp-sec{border:1px solid var(--border);border-radius:12px;padding:13px}
-.rp-title{font-family:'Cinzel',serif;font-size:8px;letter-spacing:4px;color:var(--text-d);margin-bottom:11px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.last-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.lc{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:17px;background:var(--panel2);border:1px solid var(--border)}
-.reward-box{border-radius:10px;padding:13px 10px;text-align:center;background:linear-gradient(155deg,#180e2e,#0d0820);border:1px solid rgba(155,89,245,.25);margin-bottom:10px}
-.rwd-emoji{font-size:34px;margin-bottom:6px;display:block}
-.rwd-name{font-family:'Cinzel',serif;font-size:11px;color:var(--sombra);letter-spacing:1px;margin-bottom:6px}
-.rwd-stat{font-size:11px;color:var(--text-d);line-height:1.6}
-
-.result-ovl{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(8px)}
-.result-ovl.on{display:flex}
-.result-box{background:linear-gradient(155deg,#140e26,#080516);border-radius:20px;padding:42px 46px;text-align:center;max-width:400px;width:90%;position:relative;overflow:hidden;animation:rin .5s cubic-bezier(.34,1.56,.64,1)}
-@keyframes rin{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
-.result-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.rbox-win::before{background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.rbox-lose::before{background:linear-gradient(90deg,transparent,var(--caos),transparent)}
-.r-emoji{font-size:58px;margin-bottom:14px;animation:emoji-in .6s cubic-bezier(.34,1.56,.64,1) .15s both}
-@keyframes emoji-in{from{opacity:0;transform:scale(.2) translateY(-20px)}to{opacity:1;transform:scale(1)}}
-.r-title{font-family:'Cinzel Decorative',serif;font-size:26px;margin-bottom:7px}
-.rbox-win  .r-title{color:var(--gold);text-shadow:0 0 28px rgba(201,162,39,.6)}
-.rbox-lose .r-title{color:var(--caos);text-shadow:0 0 24px rgba(232,64,64,.5)}
-.r-desc{font-size:14px;color:var(--text-d);line-height:1.8;margin-bottom:8px}
-.r-combo{font-family:'Cinzel',serif;font-size:12px;color:var(--sombra);margin-bottom:20px;letter-spacing:1px}
-.r-reward{background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:11px;padding:13px;margin-bottom:22px}
-.r-reward-lbl{font-family:'Cinzel',serif;font-size:8px;letter-spacing:4px;color:var(--text-d);margin-bottom:5px}
-.r-reward-val{font-family:'Cinzel',serif;font-size:20px;color:var(--gold-l)}
-.btn-result{width:100%;background:transparent;border-radius:10px;padding:13px;font-family:'Cinzel',serif;font-size:12px;letter-spacing:3px;cursor:pointer;transition:all .3s;border:1px solid}
-.rbox-win  .btn-result{border-color:var(--gold);color:var(--gold)}.rbox-win  .btn-result:hover{background:rgba(201,162,39,.1)}
-.rbox-lose .btn-result{border-color:var(--caos);color:var(--caos)}.rbox-lose .btn-result:hover{background:rgba(232,64,64,.1)}
-
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel2);border:1px solid var(--gold-d);border-radius:10px;padding:11px 22px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:var(--gold-l);z-index:999;white-space:nowrap;box-shadow:0 8px 40px rgba(0,0,0,.8);transition:transform .4s cubic-bezier(.34,1.56,.64,1);max-width:90vw;text-align:center}
-.toast.show{transform:translateX(-50%) translateY(0)}
-
-@media(max-width:860px){.arena-layout{grid-template-columns:1fr}.lpanel,.rpanel{display:none}}
-
-/* AUDIO */
-.audio-bar{position:fixed;bottom:16px;right:16px;z-index:200;display:flex;align-items:center;gap:10px;background:rgba(10,8,20,.92);border:1px solid var(--border2);border-radius:40px;padding:8px 16px 8px 12px;backdrop-filter:blur(16px);box-shadow:0 4px 24px rgba(0,0,0,.6);transition:all .3s;}
-.audio-bar:hover{border-color:var(--gold-d)}
-.btn-mute{width:30px;height:30px;border-radius:50%;background:transparent;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all .3s;color:var(--text-d);}
-.btn-mute:hover{border-color:var(--gold);color:var(--gold)}
-.audio-label{font-family:'Cinzel',serif;font-size:8px;letter-spacing:3px;color:var(--text-d)}
-.audio-waves{display:flex;align-items:center;gap:2px;height:16px}
-.wave-bar{width:3px;border-radius:2px;background:var(--sombra);animation:wave-anim var(--spd) ease-in-out infinite alternate;transform-origin:bottom;}
-.wave-bar:nth-child(1){height:6px;--spd:.4s}
-.wave-bar:nth-child(2){height:10px;--spd:.6s;animation-delay:.1s}
-.wave-bar:nth-child(3){height:14px;--spd:.5s;animation-delay:.2s}
-.wave-bar:nth-child(4){height:10px;--spd:.7s;animation-delay:.05s}
-.wave-bar:nth-child(5){height:6px;--spd:.45s;animation-delay:.15s}
-.wave-bar.paused{animation-play-state:paused;height:3px!important}
-@keyframes wave-anim{from{transform:scaleY(.3)}to{transform:scaleY(1)}}
-.vol-slider{-webkit-appearance:none;appearance:none;width:60px;height:3px;border-radius:2px;background:var(--border2);outline:none;cursor:pointer;}
-.vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--gold);cursor:pointer;}
-
-/* ═══ MAGIC CARD ════════════════════════════════════ */
-.card-magic .card-glow{
-  background:radial-gradient(circle at 50% 40%,rgba(192,38,211,.8),rgba(139,92,246,.4),transparent 70%);
-}
-.card-magic{
-  border-color:rgba(192,38,211,.6)!important;
-  box-shadow:0 0 20px rgba(192,38,211,.4);
-}
-.card-magic .card-name{color:#e879f9}
-
-/* Carta MAGIA giratória — animação lenta */
-.magic-gem{
-  display:inline-block;
-  animation:magic-spin 8s linear infinite, magic-pulse 2s ease-in-out infinite;
-  filter:drop-shadow(0 0 12px #c026d3) drop-shadow(0 0 24px #a21caf);
-  font-size:52px;
-}
-@keyframes magic-spin{
-  from{transform:rotate(0deg) scale(1)}
-  50% {transform:rotate(180deg) scale(1.08)}
-  to  {transform:rotate(360deg) scale(1)}
-}
-@keyframes magic-pulse{
-  0%,100%{filter:drop-shadow(0 0 8px #c026d3) drop-shadow(0 0 16px #a21caf)}
-  50%    {filter:drop-shadow(0 0 22px #e879f9) drop-shadow(0 0 44px #c026d3)}
-}
-
-/* Bônus magic overlay */
-.magic-bonus-overlay{
-  position:fixed;inset:0;z-index:600;
-  display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.8);backdrop-filter:blur(10px);
-}
-.magic-bonus-overlay.on{display:flex}
-.magic-bonus-box{
-  background:linear-gradient(155deg,#1a0830,#0d0420);
-  border:2px solid #c026d3;border-radius:20px;
-  padding:44px 50px;text-align:center;max-width:380px;width:90%;
-  position:relative;overflow:hidden;
-  animation:rin .5s cubic-bezier(.34,1.56,.64,1);
-  box-shadow:0 0 60px rgba(192,38,211,.4),0 0 120px rgba(192,38,211,.15);
-}
-.magic-bonus-box::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,#c026d3,transparent);
-}
-.magic-bonus-title{
-  font-family:'Cinzel Decorative',serif;font-size:22px;
-  color:#e879f9;text-shadow:0 0 20px #c026d3;margin-bottom:14px;
-}
-.magic-bonus-rewards{
-  display:flex;gap:16px;justify-content:center;margin:20px 0;
-}
-.mbr{
-  background:rgba(192,38,211,.12);border:1px solid rgba(192,38,211,.3);
-  border-radius:12px;padding:14px 20px;
-}
-.mbr-val{font-family:'Cinzel',serif;font-size:26px;color:#e879f9;text-shadow:0 0 12px #c026d3}
-.mbr-lbl{font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;color:#9333ea;margin-top:4px}
-.btn-magic-ok{
-  width:100%;background:linear-gradient(135deg,#c026d3,#7e22ce);
-  border:none;border-radius:10px;padding:14px;
-  color:#fff;font-family:'Cinzel',serif;font-size:12px;letter-spacing:3px;
-  cursor:pointer;transition:all .3s;margin-top:8px;
-}
-.btn-magic-ok:hover{box-shadow:0 0 24px rgba(192,38,211,.5);transform:translateY(-2px)}
-
-/* ═══ DROPDOWN MENU ════════════════════════════════ */
-.menu-wrap{position:relative}
-.btn-menu{
-  background:rgba(255,255,255,.04);border:1px solid var(--border2);
-  border-radius:8px;padding:6px 14px;color:var(--gold);
-  font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;
-  cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:6px;
-}
-.btn-menu:hover{border-color:var(--gold-d);background:rgba(201,162,39,.08)}
-.dropdown-menu{
-  position:absolute;top:calc(100% + 8px);right:0;
-  background:#0e0c1a;border:1px solid var(--border2);
-  border-radius:12px;min-width:220px;z-index:200;
-  overflow:hidden;
-  box-shadow:0 8px 40px rgba(0,0,0,.8);
-  display:none;animation:fadeUp .2s ease;
-}
-.dropdown-menu.open{display:block}
-.dm-header{
-  padding:14px 16px 10px;border-bottom:1px solid var(--border);
-}
-.dm-soulhash{font-family:'Cinzel',serif;font-size:11px;color:var(--gold-l);letter-spacing:1px;margin-bottom:3px}
-.dm-wallet{font-size:10px;color:var(--text-d)}
-.dm-balance{
-  padding:10px 16px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-}
-.dm-bal-lbl{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--text-d)}
-.dm-bal-val{font-family:'Cinzel',serif;font-size:16px;color:var(--gold)}
-.dm-item{
-  display:flex;align-items:center;gap:10px;
-  padding:11px 16px;cursor:pointer;transition:background .2s;
-  font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;
-  color:var(--text-d);border:none;background:transparent;width:100%;text-align:left;
-}
-.dm-item:hover{background:rgba(255,255,255,.04);color:var(--text)}
-.dm-item.danger:hover{color:#ef4444;background:rgba(239,68,68,.05)}
-.dm-sep{height:1px;background:var(--border);margin:4px 0}
-
-/* Withdraw modal */
-.withdraw-modal{
-  position:fixed;inset:0;z-index:700;
-  display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.8);backdrop-filter:blur(8px);
-}
-.withdraw-modal.on{display:flex}
-.withdraw-box{
-  background:linear-gradient(155deg,#110d20,#080614);
-  border:1px solid var(--border2);border-radius:18px;
-  padding:36px;max-width:380px;width:90%;
-  position:relative;overflow:hidden;
-  animation:rin .4s cubic-bezier(.34,1.56,.64,1);
-}
-.withdraw-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.wd-title{font-family:'Cinzel',serif;font-size:14px;letter-spacing:3px;color:var(--gold-l);margin-bottom:6px;text-align:center}
-.wd-balance{font-family:'Cinzel',serif;font-size:11px;color:var(--text-d);text-align:center;margin-bottom:20px}
-.wd-input-wrap{margin-bottom:16px}
-.wd-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;color:var(--gold-d);margin-bottom:6px;display:block}
-.wd-input{
-  width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border2);
-  border-radius:8px;padding:12px 14px;color:var(--text);
-  font-family:'Cinzel',serif;font-size:16px;letter-spacing:2px;
-  outline:none;text-align:center;
-}
-.wd-input:focus{border-color:var(--gold-d)}
-.wd-hint{font-size:11px;color:var(--text-d);text-align:center;margin-bottom:20px}
-.wd-btns{display:flex;gap:10px}
-.btn-wd-cancel{flex:1;background:transparent;border:1px solid var(--border2);border-radius:8px;padding:12px;color:var(--text-d);font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer}
-.btn-wd-confirm{flex:2;background:linear-gradient(135deg,#c9a227,#a07818);border:none;border-radius:8px;padding:12px;color:#000;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;font-weight:700;cursor:pointer;transition:all .3s}
-.btn-wd-confirm:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,162,39,.4)}
-.btn-wd-confirm:disabled{opacity:.5;cursor:wait;transform:none}
-.wd-feedback{margin-top:14px;padding:10px;border-radius:8px;font-size:12px;text-align:center;display:none}
-.wd-feedback.success{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:#86efac}
-.wd-feedback.error  {background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5}
-
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoulHash</title>
+  <meta name="description" content="Jogo de cartas 3x3 com recompensas em crypto">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; connect-src 'self' https://soulhash-api.onrender.com https://*.onrender.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--p:#8b5cf6;--pd:#7c3aed;--s:#f59e0b;--bg:#0f0f1a;--bgd:#080810;--card:#1a1a2e;--txt:#e2e8f0;--muted:#94a3b8;--brd:#2d2d44;--ok:#10b981;--err:#ef4444;--gold:#fbbf24}
+    *{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;background:var(--bgd);color:var(--txt);min-height:100vh}.cinzel{font-family:Cinzel,serif}
+    .screen{display:none;min-height:100vh}.screen.active{display:flex;flex-direction:column}
+    #loginScreen{align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bgd),var(--bg));position:relative;overflow:hidden}
+    #loginScreen::before{content:'';position:absolute;width:200%;height:200%;background:radial-gradient(circle,rgba(139,92,246,.1),transparent 70%);animation:pulse 4s ease-in-out infinite}@keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.8}}
+    .login-container{text-align:center;z-index:1;padding:2rem}.logo{margin-bottom:3rem}
+    .crystal-icon{font-size:5rem;color:var(--p);text-shadow:0 0 30px rgba(139,92,246,.8);animation:float 3s ease-in-out infinite}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+    .logo h1{font-size:3.5rem;color:var(--p);text-shadow:0 0 20px rgba(139,92,246,.6);margin:1rem 0}.subtitle{font-size:1.5rem;color:var(--muted);letter-spacing:.5rem}
+    .wallet-section{margin:2rem 0}.wallet-section p{color:var(--muted);margin-bottom:1.5rem;max-width:400px}
+    .btn-primary{background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;border:none;padding:1rem 2.5rem;font-size:1.1rem;font-weight:600;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:.75rem;transition:all .3s;box-shadow:0 4px 15px rgba(139,92,246,.4)}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(139,92,246,.6)}.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .phantom-icon{font-size:1.5rem}.language-selector{display:flex;align-items:center;gap:.5rem;justify-content:center;margin-top:2rem}
+    .language-selector select{background:var(--card);color:var(--txt);border:1px solid var(--brd);padding:.5rem 1rem;border-radius:8px;cursor:pointer}
+    #gameScreen{background:var(--bg)}.game-header{background:var(--card);border-bottom:2px solid var(--brd);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:100}
+    .header-left,.header-right{display:flex;align-items:center;gap:2rem}.user-info{display:flex;flex-direction:column;gap:.25rem}
+    .soulhash-display .label{font-size:.7rem;color:var(--muted);letter-spacing:.1rem}.soulhash-display .hash{font-family:monospace;font-size:.9rem;color:var(--p)}
+    .level-display{font-size:.9rem;color:var(--gold)}.game-title{font-size:2rem;color:var(--gold);text-shadow:0 0 20px rgba(251,191,36,.4)}
+    .game-subtitle{font-size:.8rem;color:var(--muted);letter-spacing:.2rem}.currency-display{display:flex;gap:1.5rem}
+    .hash-balance,.usd-balance{display:flex;align-items:center;gap:.5rem;font-weight:600}.hash-balance{color:var(--p)}.usd-balance{color:var(--ok)}
+    .menu-btn{background:var(--bg);border:1px solid var(--brd);color:var(--txt);font-size:1.5rem;width:45px;height:45px;border-radius:8px;cursor:pointer;transition:all .3s}.menu-btn:hover{background:var(--p);border-color:var(--p)}
+    .dropdown-menu{position:absolute;top:75px;right:2rem;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:.5rem;min-width:200px;display:none;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,.5)}.dropdown-menu.active{display:block}
+    .menu-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;cursor:pointer;border-radius:8px;transition:all .2s}.menu-item:hover{background:var(--bg)}
+    .game-main{display:grid;grid-template-columns:280px 1fr 280px;gap:1.5rem;padding:1.5rem;flex:1;max-width:1600px;margin:0 auto;width:100%}
+    .sidebar{display:flex;flex-direction:column;gap:1.5rem}.elements-panel,.combinations-panel,.last-result-panel,.reward-panel,.dimension-panel{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1.25rem}
+    .elements-panel h3,.combinations-panel h3,.last-result-panel h3,.reward-panel h3,.dimension-panel h3{font-size:.9rem;color:var(--muted);margin-bottom:1rem;letter-spacing:.1rem;text-transform:uppercase}
+    .element-item,.combo-item{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--brd)}.element-item:last-child,.combo-item:last-child{border-bottom:none}
+    .element-icon,.combo-icon{font-size:1.5rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+    .element-icon.luz{background:rgba(251,191,36,.2)}.element-icon.sombra{background:rgba(139,92,246,.2)}.element-icon.caos{background:rgba(239,68,68,.2)}.element-icon.empatia{background:rgba(16,185,129,.2)}.element-icon.equilibrio{background:rgba(59,130,246,.2)}
+    .element-item strong,.combo-item strong{display:block;font-size:.9rem;margin-bottom:.2rem}.element-item small,.combo-item small{color:var(--muted);font-size:.75rem}
+    .combo-item.special{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(251,191,36,.1));border-radius:8px;padding:.75rem;margin-top:.5rem}
+    .game-board{display:flex;flex-direction:column;align-items:center;gap:1.5rem}.energy-bar{width:100%;max-width:500px;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem}
+    .energy-info{display:flex;justify-content:space-between;margin-bottom:.5rem;font-size:.9rem}.energy-progress{height:12px;background:var(--bg);border-radius:6px;overflow:hidden}
+    .energy-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--s));transition:width .5s ease;border-radius:6px}.energy-regen{text-align:right;margin-top:.25rem;color:var(--muted);font-size:.75rem}
+    .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;width:100%;max-width:500px;aspect-ratio:1}
+    .card-slot{background:var(--card);border:2px solid var(--brd);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:3rem;transition:all .3s;position:relative;overflow:hidden;min-height:120px}
+    .card-slot::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(139,92,246,.1));opacity:0;transition:opacity .3s}.card-slot:hover::before{opacity:1}
+    .card-slot.win{border-color:var(--gold);box-shadow:0 0 20px rgba(251,191,36,.5);animation:winPulse 1s ease}.card-slot.crystal{border-color:var(--p);background:linear-gradient(135deg,rgba(139,92,246,.3),rgba(251,191,36,.3));animation:crystalGlow 2s ease-in-out infinite}
+    @keyframes winPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}@keyframes crystalGlow{0%,100%{box-shadow:0 0 20px rgba(139,92,246,.5)}50%{box-shadow:0 0 40px rgba(139,92,246,.8),0 0 60px rgba(251,191,36,.4)}}
+    .card{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;padding:.5rem}.card-icon{font-size:2.5rem}.card-name{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.05rem}
+    .spin-section{text-align:center;width:100%;max-width:500px}.spin-btn{width:100%;padding:1.5rem;font-size:1.5rem;font-weight:800;text-transform:uppercase;letter-spacing:.2rem;background:linear-gradient(135deg,var(--p),var(--s));border:none;border-radius:16px;color:#fff;cursor:pointer;transition:all .3s;box-shadow:0 4px 20px rgba(139,92,246,.4);position:relative;overflow:hidden}
+    .spin-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transition:left .5s}.spin-btn:hover::before{left:100%}
+    .spin-btn:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(139,92,246,.6)}.spin-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .spin-cost{display:block;font-size:.9rem;font-weight:400;margin-top:.25rem;opacity:.9}.spin-info{margin-top:1rem}.message{color:var(--muted);font-size:.95rem;min-height:1.5rem}
+    .message.success{color:var(--ok)}.message.crystal{color:var(--p);font-weight:600;animation:textPulse 1s ease-in-out infinite}@keyframes textPulse{0%,100%{opacity:1}50%{opacity:.7}}
+    .mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}.mini-card{aspect-ratio:1;background:var(--bg);border:1px solid var(--brd);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+    .reward-display{text-align:center;padding:1.5rem;background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(251,191,36,.1));border-radius:12px;border:1px solid var(--brd)}
+    .reward-icon{font-size:3rem;margin-bottom:.5rem}.reward-amount{font-size:2rem;font-weight:800;color:var(--gold)}.reward-type{color:var(--muted);font-size:.9rem;margin-top:.25rem}
+    .dimension-progress{margin:1rem 0}.progress-bar{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-bottom:.5rem}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--s));border-radius:4px}.btn-secondary{width:100%;padding:.75rem;background:transparent;border:1px solid var(--brd);color:var(--txt);border-radius:8px;cursor:pointer;transition:all .3s}.btn-secondary:hover{background:var(--bg);border-color:var(--p)}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(5px)}.modal.active{display:flex}
+    .modal-content{background:var(--card);border:1px solid var(--brd);border-radius:16px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:1.5rem;border-bottom:1px solid var(--brd)}.modal-header h2{font-size:1.5rem}
+    .modal-close{background:none;border:none;color:var(--txt);font-size:2rem;cursor:pointer;line-height:1}.modal-body{padding:1.5rem}
+    .info-item{display:flex;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--brd)}.info-item:last-child{border-bottom:none}
+    .withdraw-form{display:flex;flex-direction:column;gap:1rem}.withdraw-form label{font-weight:600;margin-bottom:.25rem}
+    .withdraw-form input{background:var(--bg);border:1px solid var(--brd);color:var(--txt);padding:.75rem;border-radius:8px;font-size:1rem}.withdraw-form input:focus{outline:none;border-color:var(--p)}
+    @media(max-width:1200px){.game-main{grid-template-columns:1fr}.sidebar{flex-direction:row;flex-wrap:wrap}.sidebar>div{flex:1;min-width:250px}}
+    @media(max-width:768px){.game-header{flex-wrap:wrap;gap:1rem;padding:1rem}.game-title{font-size:1.5rem;order:-1;width:100%;text-align:center}.cards-grid{max-width:100%;gap:.5rem}.card-slot{min-height:80px;font-size:2rem}.sidebar{flex-direction:column}}
+    .hidden{display:none!important}.animate-spin{animation:spin 1s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  </style>
 </head>
 <body>
-<canvas id="bgc"></canvas>
-
-<!-- LOADING -->
-<div class="screen active" id="s-load">
-  <div class="load-rune">🜁</div>
-  <div class="load-title">SoulHash</div>
-  <div class="load-sub">INVOCANDO O UNIVERSO</div>
-  <div class="load-bar"><div class="load-bar-f"></div></div>
-</div>
-
-<!-- CONNECT -->
-<div class="screen" id="s-connect">
-  <div style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;min-height:100vh">
-    <div class="connect-wrap">
-      <div class="sigil">
-        <svg viewBox="0 0 60 60" fill="none">
-          <circle cx="30" cy="30" r="26" stroke="#c9a227" stroke-width="1"/>
-          <polygon points="30,6 52,46 8,46" stroke="#c9a227" stroke-width="1" fill="none" opacity=".7"/>
-          <circle cx="30" cy="30" r="5" fill="#c9a227" opacity=".5"/>
-          <line x1="30" y1="4" x2="30" y2="56" stroke="#c9a227" stroke-width=".6" opacity=".3"/>
-          <line x1="4" y1="30" x2="56" y2="30" stroke="#c9a227" stroke-width=".6" opacity=".3"/>
-        </svg>
+  <!-- LOGIN -->
+  <div id="loginScreen" class="screen active">
+    <div class="login-container">
+      <div class="logo">
+        <div class="crystal-icon">◈</div>
+        <h1 class="cinzel">SOULHASH</h1>
+        <p class="subtitle">ARENA</p>
       </div>
-      <div class="brand">SoulHash</div>
-      <div class="brand-sub">SUA ALMA · SUA HISTÓRIA · SEU LEGADO</div>
-      <div class="connect-card">
-        <div class="steps" id="steps">
-          <div class="step">
-            <div class="step-dot active" id="sd1">1</div>
-            <div class="step-lbl">CONECTAR</div>
-          </div>
-          <div class="step">
-            <div class="step-dot" id="sd2">2</div>
-            <div class="step-lbl">ASSINAR</div>
-          </div>
-          <div class="step">
-            <div class="step-dot" id="sd3">✓</div>
-            <div class="step-lbl">VERIFICAR</div>
-          </div>
-        </div>
-        <div class="cc-title">AUTENTICAÇÃO WEB3</div>
-        <div class="cc-desc">
-          Conecte sua <strong>Phantom Wallet</strong> e assine uma mensagem para provar que é o dono da carteira.<br>
-          <span style="font-size:12px;color:var(--text-d)">Nenhuma transação será realizada.</span>
-        </div>
-        <button class="btn-phantom" id="btn-connect">
-          <div class="ph-badge">
-            <svg width="20" height="20" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="20" fill="#ab9ff2"/>
-              <path d="M10 22c0-7 4.6-11.5 11.5-11.5 4.6 0 8 2.3 10.3 5.8H25c-1.1-2.3-3.4-3.8-5.7-3.8-4.6 0-6.9 3.8-6.9 9.2 0 3.4 2.3 6.9 6.9 6.9 2.3 0 4.6-1.2 5.7-3.4h6.9c-2.3 4.6-6.9 6.9-12.6 6.9-6.9 0-9.3-4.6-9.3-10.1z" fill="white"/>
-            </svg>
-          </div>
-          CONECTAR PHANTOM WALLET
-        </button>
-        <div class="wallet-pill" id="wallet-pill">
-          <div class="wp-dot"></div>
-          <div class="wp-addr" id="wallet-addr-short">—</div>
-        </div>
-        <button class="btn-sign" id="btn-sign">✍ &nbsp;ASSINAR MENSAGEM</button>
-        <div class="status-box" id="status-box"></div>
+      <div class="wallet-section">
+        <p data-i18n="connectWallet">Conecte sua wallet Phantom para entrar no universo SoulHash</p>
+        <button id="connectWalletBtn" class="btn-primary"><span class="phantom-icon">👻</span><span data-i18n="connectPhantom">Conectar Phantom</span></button>
       </div>
-      <div style="margin-top:36px;font-style:italic;font-size:13px;color:var(--text-d);line-height:1.9;text-align:center">
-        "Cada escolha molda quem você se torna.<br>Cada alma tem seu valor."
+      <div class="language-selector">
+        <span>🌎</span>
+        <select id="languageSelect">
+          <option value="pt">Português</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="ja">日本語</option>
+          <option value="zh">中文</option>
+        </select>
       </div>
     </div>
   </div>
-</div>
 
-<!-- WELCOME -->
-<div class="screen" id="s-welcome">
-  <div style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;min-height:100vh">
-    <div class="wlc-orb">S</div>
-    <div class="wlc-title">BEM-VINDO AO UNIVERSO</div>
-    <div class="wlc-sub">SOULHASH UNIVERSE</div>
-    <div class="bonus-card">
-      <div class="bonus-ribbon">IDENTIDADE CONFIRMADA</div>
-      <div class="bonus-hash-display">
-        <div class="bhd-label">SEU SOULHASH ÚNICO</div>
-        <div class="bhd-hash" id="bhd-hash">—</div>
-        <div class="bhd-wallet" id="bhd-wallet">—</div>
-      </div>
-      <div class="bonus-ribbon" style="margin-top:16px">BÔNUS DE ENTRADA</div>
-      <div class="bonus-num">100</div>
-      <div class="bonus-unit">HASH CREDITADOS</div>
-      <div class="bonus-desc" style="text-align:center">
-        Sua alma chegou ao universo.<br>
-        100 Hash foram creditados na sua conta.<br>
-        <span style="font-size:12px;color:var(--text-d)">Fase 1 — Jogo de Cartas: combine 3 iguais para avançar de fase.</span>
-      </div>
-      <button class="btn-gold" id="btn-enter-arena">⚔ &nbsp;ENTRAR NO UNIVERSO</button>
-    </div>
-  </div>
-</div>
-
-<!-- ARENA -->
-<div class="screen" id="s-arena">
-  <div style="width:100%;display:flex;flex-direction:column">
-
-    <div class="topbar">
-      <div class="tb-player">
-        <div class="tb-av">👤</div>
-        <div>
-          <div class="tb-hash-lbl" id="tb-hash">—</div>
-          <div class="tb-lvl-lbl">NV <span id="tb-lvl">1</span></div>
-          <div class="tb-xp"><div class="tb-xp-f" id="tb-xpf" style="width:5%"></div></div>
+  <!-- GAME -->
+  <div id="gameScreen" class="screen">
+    <header class="game-header">
+      <div class="header-left">
+        <div class="user-info">
+          <div class="soulhash-display"><span class="label">SOULHASH</span><span id="userSoulhash" class="hash">---</span></div>
+          <div class="level-display"><span data-i18n="level">Nível</span> <span id="userLevel">1</span></div>
         </div>
       </div>
-      <div class="tb-center">
-        <div class="tb-title">SoulHash Universo</div>
-        <div class="tb-sub">FASE I — JOGO DAS ALMAS</div>
+      <div class="header-center">
+        <h1 class="game-title cinzel">SOULHASH ARENA</h1>
+        <p class="game-subtitle" data-i18n="cardSystem">SISTEMA DE CARTAS - SLOT 3x3</p>
       </div>
-      <div class="tb-cur">
-        <div class="cpill"><div class="cpill-i">💎</div><div class="cpill-v" id="gem-val">0</div></div>
-        <div class="cpill"><div class="cpill-i">🔷</div><div class="cpill-v" id="hash-val">100</div></div>
-        <div class="menu-wrap">
-          <button class="btn-menu" id="btn-menu" onclick="toggleMenu()">⚙ MENU</button>
-          <div class="dropdown-menu" id="dropdown-menu">
-            <div class="dm-header">
-              <div class="dm-soulhash" id="dm-soulhash-val">—</div>
-              <div class="dm-wallet" id="dm-wallet-val">—</div>
+      <div class="header-right">
+        <div class="currency-display">
+          <div class="hash-balance"><span class="icon">💎</span><span id="hashBalance">0</span></div>
+          <div class="usd-balance"><span class="icon">$</span><span id="usdBalance">0.00</span></div>
+        </div>
+        <button id="menuBtn" class="menu-btn">☰</button>
+      </div>
+    </header>
+
+    <div id="dropdownMenu" class="dropdown-menu">
+      <div class="menu-item" id="infoBtn"><span>ℹ️</span><span data-i18n="info">Info</span></div>
+      <div class="menu-item" id="volumeBtn"><span>🔊</span><span data-i18n="sound">Som</span></div>
+      <div class="menu-item" id="withdrawBtn"><span>💰</span><span data-i18n="withdraw">Withdraw</span></div>
+      <div class="menu-item" id="logoutBtn"><span>🚪</span><span data-i18n="logout">Sair</span></div>
+    </div>
+
+    <main class="game-main">
+      <aside class="sidebar left-sidebar">
+        <div class="elements-panel">
+          <h3 data-i18n="elements">ELEMENTOS</h3>
+          <div class="element-item"><span class="element-icon luz">☀️</span><div><strong>LUZ</strong><small data-i18n="lightDesc">Cura, Proteção</small></div></div>
+          <div class="element-item"><span class="element-icon sombra">🌑</span><div><strong>SOMBRA</strong><small data-i18n="shadowDesc">Dano, Crítico</small></div></div>
+          <div class="element-item"><span class="element-icon caos">🔥</span><div><strong>CAOS</strong><small data-i18n="chaosDesc">Área, Aleatório</small></div></div>
+          <div class="element-item"><span class="element-icon empatia">💚</span><div><strong>EMPATIA</strong><small data-i18n="empathyDesc">Cura, Escudo</small></div></div>
+          <div class="element-item"><span class="element-icon equilibrio">⚖️</span><div><strong>EQUILÍBRIO</strong><small data-i18n="balanceDesc">Defesa, Estabilidade</small></div></div>
+        </div>
+        <div class="combinations-panel">
+          <h3 data-i18n="combinations">COMBINAÇÕES</h3>
+          <div class="combo-item"><span class="combo-icon">3️⃣</span><div><strong data-i18n="threeInRow">3 IGUAIS</strong><small data-i18n="strongEffect">+20 Hash</small></div></div>
+          <div class="combo-item special"><span class="combo-icon">💎</span><div><strong data-i18n="crystalCenter">CRISTAL CENTRO</strong><small data-i18n="crystalBonus">+500 Hash + $20</small></div></div>
+        </div>
+      </aside>
+
+      <section class="game-board">
+        <div class="energy-bar">
+          <div class="energy-info"><span data-i18n="energy">ENERGIA</span><span id="energyText">100/100</span></div>
+          <div class="energy-progress"><div id="energyFill" class="energy-fill" style="width:100%"></div></div>
+          <div class="energy-regen"><small data-i18n="regenRate">+1/min</small></div>
+        </div>
+        <div class="cards-grid" id="cardsGrid">
+          <div class="card-slot" data-index="0"></div><div class="card-slot" data-index="1"></div><div class="card-slot" data-index="2"></div>
+          <div class="card-slot" data-index="3"></div><div class="card-slot" data-index="4"></div><div class="card-slot" data-index="5"></div>
+          <div class="card-slot" data-index="6"></div><div class="card-slot" data-index="7"></div><div class="card-slot" data-index="8"></div>
+        </div>
+        <div class="spin-section">
+          <button id="spinBtn" class="spin-btn"><span class="spin-text" data-i18n="spin">GIRAR</span><span class="spin-cost">-10 <span data-i18n="energy">energia</span></span></button>
+          <div class="spin-info"><span id="lastMessage" class="message" data-i18n="ready">Pronto para jogar!</span></div>
+        </div>
+      </section>
+
+      <aside class="sidebar right-sidebar">
+        <div class="last-result-panel">
+          <h3 data-i18n="lastResult">ÚLTIMO RESULTADO</h3>
+          <div class="mini-grid" id="miniGrid"></div>
+        </div>
+        <div class="reward-panel">
+          <h3 data-i18n="reward">RECOMPENSA</h3>
+          <div class="reward-display">
+            <div class="reward-icon">💎</div>
+            <div class="reward-amount" id="rewardAmount">0</div>
+            <div class="reward-type" data-i18n="hash">Hash</div>
+          </div>
+        </div>
+        <div class="dimension-panel">
+          <h3 data-i18n="currentDimension">DIMENSÃO ATUAL</h3>
+          <div class="dimension-info">
+            <strong>DIMENSÃO I - ORIGEM</strong>
+            <div class="dimension-progress">
+              <div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div>
+              <span>750 / 1.500</span>
             </div>
-            <div class="dm-balance">
-              <div class="dm-bal-lbl">SALDO</div>
-              <div class="dm-bal-val"><span id="dm-balance-val">0</span> Hash</div>
-            </div>
-            <button class="dm-item" onclick="menuToggleSound()">
-              <span id="dm-sound-icon">🔊</span>
-              <span id="dm-sound-lbl">Silenciar Música</span>
-            </button>
-            <button class="dm-item" onclick="openWithdraw()">
-              <span>💸</span><span>Sacar Hash</span>
-            </button>
-            <div class="dm-sep"></div>
-            <button class="dm-item danger" onclick="menuLogout()">
-              <span>🚪</span><span>Sair</span>
-            </button>
           </div>
+          <button class="btn-secondary" data-i18n="viewProgress">VER PROGRESSO</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div id="infoModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header"><h2 data-i18n="info">Informações</h2><button class="modal-close">&times;</button></div>
+      <div class="modal-body">
+        <div class="info-item"><strong>Total Hash:</strong><span id="infoTotalHash">0</span></div>
+        <div class="info-item"><strong>Saldo USD:</strong><span id="infoTotalUsd">$0.00</span></div>
+        <div class="info-item"><strong>Jogadas:</strong><span id="infoSpins">0</span></div>
+        <div class="info-item"><strong>Vitórias:</strong><span id="infoWins">0</span></div>
+        <div class="info-item"><strong>Cristais:</strong><span id="infoCrystals">0</span></div>
+      </div>
+    </div>
+  </div>
+  <div id="withdrawModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header"><h2 data-i18n="withdraw">Retirar Hash</h2><button class="modal-close">&times;</button></div>
+      <div class="modal-body">
+        <div class="withdraw-form">
+          <label data-i18n="amount">Quantidade:</label>
+          <input type="number" id="withdrawAmount" min="50" placeholder="Mínimo: 50">
+          <label data-i18n="walletAddress">Endereço da Wallet:</label>
+          <input type="text" id="withdrawAddress" placeholder="Solana wallet address">
+          <button id="confirmWithdrawBtn" class="btn-primary" data-i18n="confirm">Confirmar</button>
         </div>
       </div>
     </div>
-
-    <div class="arena-layout">
-
-      <!-- LEFT -->
-      <div class="lpanel">
-        <div class="lp-sec">
-          <div class="lp-title">ELEMENTOS</div>
-          <div class="el-row"><div class="el-ico">☀️</div><div><div class="el-name" style="color:var(--luz)">LUZ</div><div class="el-desc">Cura, Proteção, Equilíbrio</div></div></div>
-          <div class="el-row"><div class="el-ico">🌑</div><div><div class="el-name" style="color:var(--sombra)">SOMBRA</div><div class="el-desc">Dano, Invisibilidade, Crítico</div></div></div>
-          <div class="el-row"><div class="el-ico">🔥</div><div><div class="el-name" style="color:var(--caos)">CAOS</div><div class="el-desc">Dano em Área, Aleatório</div></div></div>
-          <div class="el-row"><div class="el-ico">💚</div><div><div class="el-name" style="color:var(--empatia)">EMPATIA</div><div class="el-desc">Cura, Escudo, Suporte</div></div></div>
-          <div class="el-row"><div class="el-ico">⚖️</div><div><div class="el-name" style="color:var(--equil)">EQUILÍBRIO</div><div class="el-desc">Defesa, Resistência</div></div></div>
-        </div>
-        <div class="lp-sec">
-          <div class="lp-title">COMBINAÇÕES</div>
-          <div class="combo-row"><div style="color:var(--sombra);font-size:13px;width:18px;flex-shrink:0">◆</div><div><div class="combo-name" style="color:var(--sombra)">3 IGUAIS NA LINHA</div><div class="combo-desc">Ativa Efeito Forte · +50 Hash</div></div></div>
-          <div class="combo-row"><div style="color:var(--empatia);font-size:13px;width:18px;flex-shrink:0">✦</div><div><div class="combo-name" style="color:var(--empatia)">DIAGONAL COMPLETA</div><div class="combo-desc">Habilidade Épica · +80 Hash</div></div></div>
-          <div class="combo-row"><div style="color:var(--gold);font-size:13px;width:18px;flex-shrink:0">◉</div><div><div class="combo-name" style="color:var(--gold)">CENTRO + 4 CANTOS</div><div class="combo-desc">Alma Rara · +120 Hash</div></div></div>
-          <div class="combo-row"><div style="color:var(--equil);font-size:13px;width:18px;flex-shrink:0">⬡</div><div><div class="combo-name" style="color:var(--equil)">TODOS DIFERENTES</div><div class="combo-desc">Recompensa Especial · +60 Hash</div></div></div>
-        </div>
-      </div>
-
-      <!-- ✅ ERRO 1, 2 e 3 CORRIGIDOS: center-col agora contém TODOS os seus filhos -->
-      <div class="center-col">
-        <div class="card-grid" id="card-grid"></div>
-
-        <div class="spin-area">
-          <button class="btn-spin" id="btn-spin">GIRAR</button>
-          <div class="spin-lbl">1 ENERGIA DA ALMA</div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="epips" id="epips"></div>
-            <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-d)">ENERGIA &nbsp;<span id="energy-txt">7/10</span></div>
-          </div>
-        </div>
-
-        <div style="width:100%;max-width:430px">
-          <div style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:4px;color:var(--text-d);margin-bottom:7px">SUAS CARTAS</div>
-          <div class="your-cards" id="your-cards"></div>
-        </div>
-
-        <div class="dim-box">
-          <div class="dim-lbl">DIMENSÃO ATUAL</div>
-          <div class="dim-name">Dimensão I — Origem</div>
-          <div class="dim-track"><div class="dim-fill" id="dim-fill" style="width:0%"></div></div>
-          <div class="dim-txt"><span id="dim-cur">0</span> / 1.500</div>
-        </div>
-      </div><!-- fim .center-col -->
-
-      <!-- RIGHT -->
-      <div class="rpanel">
-        <div class="rp-sec">
-          <div class="rp-title">ÚLTIMO RESULTADO</div>
-          <div class="last-grid" id="last-grid">
-            <div class="lc">—</div><div class="lc">—</div><div class="lc">—</div>
-            <div class="lc">—</div><div class="lc">—</div><div class="lc">—</div>
-            <div class="lc">—</div><div class="lc">—</div><div class="lc">—</div>
-          </div>
-        </div>
-        <div class="rp-sec">
-          <div class="rp-title">RECOMPENSA</div>
-          <div class="reward-box" id="reward-box">
-            <span class="rwd-emoji">🂠</span>
-            <div class="rwd-name" style="color:var(--text-d)">—</div>
-            <div class="rwd-stat">Gire para revelar</div>
-          </div>
-        </div>
-        <div class="rp-sec">
-          <div class="rp-title">BÔNUS DA COMBINAÇÃO</div>
-          <div id="combo-bonus" style="font-size:13px;color:var(--text-d);text-align:center;padding:8px">Nenhuma ainda</div>
-        </div>
-      </div>
-
-    </div><!-- fim .arena-layout -->
   </div>
-</div><!-- fim #s-arena -->
 
-<!-- RESULT OVERLAY -->
-<div class="result-ovl" id="result-ovl">
-  <div class="result-box rbox-win" id="result-box">
-    <div class="r-emoji" id="r-emoji">🏆</div>
-    <div class="r-title" id="r-title">VITÓRIA!</div>
-    <div class="r-desc"  id="r-desc">Você combinou 3 cartas iguais!</div>
-    <div class="r-combo" id="r-combo"></div>
-    <div class="r-reward"><div class="r-reward-lbl">RECOMPENSA</div><div class="r-reward-val" id="r-reward">+50 Hash</div></div>
-    <button class="btn-result" id="r-btn">CONTINUAR</button>
-  </div>
-</div>
+  <script>
+    // ═══════════════════════════════════════════════════════
+    // CONFIGURAÇÃO
+    // ═══════════════════════════════════════════════════════
+    const API_URL = 'https://soulhash-api.onrender.com';
+    let sessionToken = null, userData = null, soundEnabled = true, currentLang = 'pt';
 
-<div class="toast" id="toast"></div>
-
-<!-- ✅ ERRO 4 CORRIGIDO: audio-bar DENTRO do body, antes de 
-<!-- MAGIC BONUS OVERLAY -->
-<div class="magic-bonus-overlay" id="magic-bonus-overlay">
-  <div class="magic-bonus-box">
-    <div style="font-size:52px;margin-bottom:12px">
-      <span class="magic-gem">💎</span>
-    </div>
-    <div class="magic-bonus-title">✦ CARTA DA MAGIA ✦</div>
-    <div style="font-size:13px;color:#9333ea;margin-bottom:18px;font-family:'Cinzel',serif;letter-spacing:1px">
-      A pedra mística apareceu no centro!
-    </div>
-    <div class="magic-bonus-rewards">
-      <div class="mbr">
-        <div class="mbr-val" id="mb-energy">+20</div>
-        <div class="mbr-lbl">ENERGIA</div>
-      </div>
-      <div class="mbr">
-        <div class="mbr-val" id="mb-hash">+20</div>
-        <div class="mbr-lbl">HASH</div>
-      </div>
-    </div>
-    <div style="font-size:12px;color:#6d28d9;font-family:'Cinzel',serif;letter-spacing:1px;margin-bottom:16px">
-      Você foi sorteado pelo universo!
-    </div>
-    <button class="btn-magic-ok" onclick="closeMagicBonus()">
-      ✦ RECEBER BÔNUS
-    </button>
-  </div>
-</div>
-
-<!-- WITHDRAW MODAL -->
-<div class="withdraw-modal" id="withdraw-modal">
-  <div class="withdraw-box">
-    <div class="wd-title">SACAR HASH</div>
-    <div class="wd-balance">Saldo disponível: <span id="wd-balance-show" style="color:var(--gold)">0</span> Hash</div>
-    <div class="wd-input-wrap">
-      <label class="wd-label">VALOR DO SAQUE</label>
-      <input class="wd-input" id="wd-amount" type="number" min="20" step="10" placeholder="20" />
-    </div>
-    <div class="wd-hint">Mínimo: 20 Hash · Será enviado para sua wallet Phantom</div>
-    <div class="wd-btns">
-      <button class="btn-wd-cancel" onclick="closeWithdraw()">CANCELAR</button>
-      <button class="btn-wd-confirm" id="btn-wd-confirm" onclick="confirmWithdraw()">SACAR</button>
-    </div>
-    <div class="wd-feedback" id="wd-feedback"></div>
-  </div>
-</div>
-
-</body> -->
-<div class="audio-bar" id="audio-bar">
-  <button class="btn-mute" id="btn-mute" title="Mute/Unmute">🔊</button>
-  <div class="audio-waves" id="audio-waves">
-    <div class="wave-bar"></div>
-    <div class="wave-bar"></div>
-    <div class="wave-bar"></div>
-    <div class="wave-bar"></div>
-    <div class="wave-bar"></div>
-  </div>
-  <div class="audio-label">MÚSICA DA ALMA</div>
-  <input class="vol-slider" id="vol-slider" type="range" min="0" max="100" value="40" title="Volume"/>
-</div>
-
-<script>
-const API = 'https://soulhash-api.onrender.com';
-
-// ─── Estado ───────────────────────────────────────────────
-const S = {
-  wallet:       null,
-  soulhash:     null,
-  sessionToken: null,
-  soul:         null,
-  spinning:     false,
-};
-
-// ─── Canvas BG ────────────────────────────────────────────
-(function(){
-  const c=document.getElementById('bgc'),ctx=c.getContext('2d'),stars=[];
-  function resize(){c.width=innerWidth;c.height=innerHeight;}
-  resize();addEventListener('resize',resize);
-  for(let i=0;i<120;i++)stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.2+.2,a:Math.random(),da:(Math.random()*.004+.001)*(Math.random()>.5?1:-1),col:Math.random()>.85?'#c9a227':Math.random()>.7?'#8b5cf6':'#fff'});
-  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.a=Math.max(.05,Math.min(.85,s.a+s.da));if(s.a<=.05||s.a>=.85)s.da*=-1;ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);ctx.fillStyle=s.col;ctx.globalAlpha=s.a;ctx.fill();});ctx.globalAlpha=1;requestAnimationFrame(draw);}
-  draw();
-})();
-
-// ─── UI Helpers ───────────────────────────────────────────
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0);}
-function setStep(n){[1,2,3].forEach(i=>{const d=document.getElementById('sd'+i);if(d)d.className='step-dot'+(i<n?' done':i===n?' active':'');});}
-function setStatus(msg,type='info'){const el=document.getElementById('status-box');el.textContent=msg;el.className='status-box '+type;el.style.display=msg?'block':'none';}
-let _tt;
-function toast(msg,dur=3200){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),dur);}
-function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=String(val);}
-function sanitize(s){return typeof s==='string'?s.replace(/[<>&"']/g,'').slice(0,160):'Erro';}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-
-function toBase58(bytes){
-  const A='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  let d=[0];
-  for(let i=0;i<bytes.length;i++){let c=bytes[i];for(let j=0;j<d.length;j++){c+=d[j]<<8;d[j]=c%58;c=(c/58)|0;}while(c>0){d.push(c%58);c=(c/58)|0;}}
-  let r='';for(let i=0;i<bytes.length&&bytes[i]===0;i++)r+='1';for(let i=d.length-1;i>=0;i--)r+=A[d[i]];return r;
-}
-
-// ─── Cards — inclui MAGIA ─────────────────────────────────
-const CARDS=[
-  {id:'luz',    name:'LUZ',        emoji:'☀️', cls:'card-luz'    },
-  {id:'sombra', name:'SOMBRA',     emoji:'🌑', cls:'card-sombra' },
-  {id:'caos',   name:'CAOS',       emoji:'🔥', cls:'card-caos'   },
-  {id:'empatia',name:'EMPATIA',    emoji:'💚', cls:'card-empatia'},
-  {id:'equil',  name:'EQUILÍBRIO', emoji:'⚖️', cls:'card-equil'  },
-  // ★ NOVA CARTA: MAGIA — gema rotatória pulsante
-  {id:'magic',  name:'MAGIA',      emoji:'💎', cls:'card-magic', isMagic:true},
-];
-const CARD_MAP={
-  luz:CARDS[0],sombra:CARDS[1],caos:CARDS[2],empatia:CARDS[3],equil:CARDS[4],
-  magic:CARDS[5],
-  // IDs do servidor
-  fire:CARDS[2],water:CARDS[0],earth:CARDS[4],air:CARDS[3],
-};
-const EPIC_CARDS=[
-  {emoji:'🌑',name:'Sombra Abissal',stats:'Dano +35% · Crítico +20% · 3 Turnos'},
-  {emoji:'☀️',name:'Luz Divina',    stats:'Cura +50% · Escudo +30% · 4 Turnos'},
-  {emoji:'🔥',name:'Caos Infernal', stats:'Área +40% · Crítico +15% · 2 Turnos'},
-  {emoji:'💚',name:'Empatia Épica', stats:'Suporte +60% · 5 Turnos'},
-  {emoji:'💎',name:'Magia Ancestral',stats:'Energia +20 · Hash +20 · Bônus Total'},
-];
-const COMBO_LABELS={
-  '3linha':'TRÍADE SAGRADA','diagonal':'DIAGONAL COMPLETA',
-  'cruz':'ALMA RARA','todos':'TRÍADE DAS SOMBRAS',
-  'magic_line':'✦ MAGIA SAGRADA ✦','none':''
-};
-
-// ═══════════════════════════════════════════════════════════
-//  AUTH — conectar + challenge + verify
-// ═══════════════════════════════════════════════════════════
-async function connectWallet(){
-  const phantom=window.phantom?.solana??window.solana;
-  if(!phantom?.isPhantom){setStatus('Phantom Wallet não detectada. Instale em phantom.app.','error');return;}
-  const btn=document.getElementById('btn-connect');
-  btn.disabled=true;btn.textContent='CONECTANDO...';
-  setStatus('Aguardando aprovação na Phantom...','info');
-  try {
-    const resp=await phantom.connect();
-    S.wallet=resp.publicKey.toString();
-    const short=S.wallet.slice(0,6)+'...'+S.wallet.slice(-4);
-    document.getElementById('wallet-pill').style.display='flex';
-    setText('wallet-addr-short','✓ '+short+' conectada');
-    btn.textContent='✓ PHANTOM CONECTADA';
-    sfxConnect();
-    setStep(2);
-    setStatus('Wallet conectada. Assine para gerar seu SoulHash.','success');
-    document.getElementById('btn-sign').style.display='block';
-  } catch(e){
-    setStatus('Conexão cancelada.','warn');
-    btn.disabled=false;btn.textContent='CONECTAR PHANTOM WALLET';
-  }
-}
-
-async function signAndLogin(){
-  if(!S.wallet){toast('Conecte a wallet primeiro');return;}
-  const btn=document.getElementById('btn-sign');
-  btn.disabled=true;btn.textContent='AGUARDE...';setStep(2);
-  try {
-    // A: /challenge → { message }
-    setStatus('Solicitando desafio...','info');
-    const chalRes=await fetch(`${API}/challenge`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:S.wallet})});
-    if(!chalRes.ok){const e=await chalRes.json().catch(()=>({}));throw new Error(e.error||`/challenge ${chalRes.status}`);}
-    const {message}=await chalRes.json();
-    if(!message) throw new Error('Sem mensagem de desafio');
-
-    // B: signMessage
-    setStatus('Assine a mensagem na Phantom...','info');
-    btn.textContent='ASSINAR NA PHANTOM...';
-    const phantom=window.phantom?.solana??window.solana;
-    const sig=await phantom.signMessage(new TextEncoder().encode(message),'utf8');
-    const signature=toBase58(sig.signature);
-
-    // C: /verify → { sessionToken, soulhash, balance, energy, maxEnergy, level, stats }
-    setStep(3);setStatus('Verificando...','info');btn.textContent='VERIFICANDO...';
-    const verRes=await fetch(`${API}/verify`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:S.wallet,signature})});
-    if(!verRes.ok){const e=await verRes.json().catch(()=>({}));throw new Error(e.error||`/verify ${verRes.status}`);}
-    const data=await verRes.json();
-    if(!data.soulhash) throw new Error('Servidor não retornou soulhash');
-
-    // Salva estado — backend é fonte de verdade
-    S.soulhash     = data.soulhash;
-    S.sessionToken = data.sessionToken;
-    S.soul={
-      soulhash:    data.soulhash,
-      wallet:      S.wallet,
-      hash_balance:data.balance    ??100,
-      energy:      data.energy     ??10,   // ★ sempre cheia pelo backend
-      maxEnergy:   data.maxEnergy  ??10,
-      level:       data.level      ??1,
-      stats:       data.stats      ??{xp:0,spins:0,wins:0},
-      ownedCards:  {},
-      dimProgress: 0,
-      phasePassed: false,
-      gems:        0,
+    // ═══════════════════════════════════════════════════════
+    // i18n - MULTI-IDIOMA
+    // ═══════════════════════════════════════════════════════
+    const i18n = {
+      pt: {connectWallet:"Conecte sua wallet Phantom",connectPhantom:"Conectar Phantom",level:"Nível",cardSystem:"SISTEMA 3x3",info:"Info",sound:"Som",withdraw:"Withdraw",logout:"Sair",elements:"ELEMENTOS",lightDesc:"Cura, Proteção",shadowDesc:"Dano, Crítico",chaosDesc:"Área, Aleatório",empathyDesc:"Cura, Escudo",balanceDesc:"Defesa, Estabilidade",combinations:"COMBINAÇÕES",threeInRow:"3 IGUAIS",strongEffect:"+20 Hash",crystalCenter:"CRISTAL CENTRO",crystalBonus:"+500 Hash + $20",energy:"ENERGIA",regenRate:"+1/min",spin:"GIRAR",ready:"Pronto para jogar!",lastResult:"ÚLTIMO RESULTADO",reward:"RECOMPENSA",hash:"Hash",currentDimension:"DIMENSÃO ATUAL",viewProgress:"VER PROGRESSO",amount:"Quantidade:",walletAddress:"Endereço:",confirm:"Confirmar",insufficientEnergy:"Energia insuficiente!",crystalWin:"🎉 CRISTAL! +500 Hash + $20!",win:"Vitória!",lose:"Derrota",connecting:"Conectando...",connected:"Conectado!",error:"Erro"},
+      en: {connectWallet:"Connect Phantom wallet",connectPhantom:"Connect Phantom",level:"Level",cardSystem:"3x3 CARD SYSTEM",info:"Info",sound:"Sound",withdraw:"Withdraw",logout:"Logout",elements:"ELEMENTS",lightDesc:"Heal, Protect",shadowDesc:"Damage, Crit",chaosDesc:"Area, Random",empathyDesc:"Heal, Shield",balanceDesc:"Defense, Stable",combinations:"COMBOS",threeInRow:"3 MATCH",strongEffect:"+20 Hash",crystalCenter:"CRYSTAL CENTER",crystalBonus:"+500 Hash + $20",energy:"ENERGY",regenRate:"+1/min",spin:"SPIN",ready:"Ready to play!",lastResult:"LAST RESULT",reward:"REWARD",hash:"Hash",currentDimension:"CURRENT DIMENSION",viewProgress:"VIEW PROGRESS",amount:"Amount:",walletAddress:"Address:",confirm:"Confirm",insufficientEnergy:"Low energy!",crystalWin:"🎉 CRYSTAL! +500 Hash + $20!",win:"Win!",lose:"Lose",connecting:"Connecting...",connected:"Connected!",error:"Error"},
+      es: {connectWallet:"Conecta tu Phantom",connectPhantom:"Conectar Phantom",level:"Nivel",cardSystem:"SISTEMA 3x3",info:"Info",sound:"Sonido",withdraw:"Retirar",logout:"Salir",elements:"ELEMENTOS",lightDesc:"Curar, Proteger",shadowDesc:"Daño, Crítico",chaosDesc:"Área, Aleatorio",empathyDesc:"Curar, Escudo",balanceDesc:"Defensa, Estable",combinations:"COMBOS",threeInRow:"3 IGUALES",strongEffect:"+20 Hash",crystalCenter:"CRISTAL CENTRO",crystalBonus:"+500 Hash + $20",energy:"ENERGÍA",regenRate:"+1/min",spin:"GIRAR",ready:"¡Listo!",lastResult:"ÚLTIMO",reward:"RECOMPENSA",hash:"Hash",currentDimension:"DIMENSIÓN",viewProgress:"VER PROGRESO",amount:"Cantidad:",walletAddress:"Dirección:",confirm:"Confirmar",insufficientEnergy:"¡Sin energía!",crystalWin:"🎉 ¡CRISTAL! +500 Hash + $20!",win:"¡Victoria!",lose:"Derrota",connecting:"Conectando...",connected:"¡Conectado!",error:"Error"},
+      ja: {connectWallet:"Phantomを接続",connectPhantom:"接続",level:"レベル",cardSystem:"3x3カード",info:"情報",sound:"音",withdraw:"出金",logout:"ログアウト",elements:"元素",lightDesc:"回復,保護",shadowDesc:"ダメージ,クリ",chaosDesc:"範囲,ランダム",empathyDesc:"回復,シールド",balanceDesc:"防御,安定",combinations:"コンボ",threeInRow:"3つ揃い",strongEffect:"+20 Hash",crystalCenter:"中央クリスタル",crystalBonus:"+500 Hash + $20",energy:"エネルギー",regenRate:"+1/分",spin:"スピン",ready:"準備完了!",lastResult:"前回結果",reward:"報酬",hash:"Hash",currentDimension:"現在の次元",viewProgress:"進行表示",amount:"数量:",walletAddress:"アドレス:",confirm:"確認",insufficientEnergy:"エネルギー不足!",crystalWin:"🎉 クリスタル! +500 Hash + $20!",win:"勝利!",lose:"敗北",connecting:"接続中...",connected:"接続完了!",error:"エラー"},
+      zh: {connectWallet:"连接Phantom钱包",connectPhantom:"连接",level:"等级",cardSystem:"3x3卡牌",info:"信息",sound:"声音",withdraw:"提现",logout:"退出",elements:"元素",lightDesc:"治疗,保护",shadowDesc:"伤害,暴击",chaosDesc:"范围,随机",empathyDesc:"治疗,护盾",balanceDesc:"防御,稳定",combinations:"组合",threeInRow:"3个连成",strongEffect:"+20 Hash",crystalCenter:"中心水晶",crystalBonus:"+500 Hash + $20",energy:"能量",regenRate:"+1/分钟",spin:"旋转",ready:"准备开始!",lastResult:"上次结果",reward:"奖励",hash:"Hash",currentDimension:"当前维度",viewProgress:"查看进度",amount:"数量:",walletAddress:"地址:",confirm:"确认",insufficientEnergy:"能量不足!",crystalWin:"🎉 水晶! +500 Hash + $20!",win:"胜利!",lose:"失败",connecting:"连接中...",connected:"已连接!",error:"错误"}
     };
-    setStatus('✦ Autenticado!','success');
-    toast('✦ Identidade confirmada! Energia máxima.');
-    setTimeout(()=>enterUniverse(),800);
-  } catch(e){
-    const msg=e.message?.toLowerCase()||'';
-    if(msg.includes('rejected')||msg.includes('cancel')){setStatus('Assinatura cancelada.','warn');}
-    else{setStatus('Erro: '+sanitize(e.message),'error');}
-    btn.disabled=false;btn.textContent='✍ ASSINAR MENSAGEM';setStep(2);
-  }
-}
+    function t(k){return i18n[currentLang][k]||k}
+    function setLanguage(lang){currentLang=lang;document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(el.tagName==='INPUT')el.placeholder=t(k);else el.textContent=t(k)})}
 
-// ─── Welcome ──────────────────────────────────────────────
-function enterUniverse(){
-  sfxButton();
-  const short=S.wallet?S.wallet.slice(0,6)+'...'+S.wallet.slice(-4):'—';
-  setText('bhd-hash',  S.soulhash||'—');
-  setText('bhd-wallet',short+' · Autenticado ✓');
-  showScreen('s-welcome');
-  toast('✦ +100 Hash creditados! Energia máxima. Bem-vindo.');
-}
+    // ═══════════════════════════════════════════════════════
+    // bs58 (simplificado para browser)
+    // ═══════════════════════════════════════════════════════
+    const bs58 = {encode:(buf)=>{const A='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';let c,i,j,o='';const b=new Uint8Array(buf);for(i=j=0;i<b.length;i++){for(c=b[i],j=0;j<o.length||c!==0;j++){c=c+256*(j<o.length?A.indexOf(o[j]):0);o=o.slice(0,j)+A[c%58]+o.slice(j+1);c=Math.floor(c/58)}}for(i=0;b[i]===0&&i<b.length;i++)o='1'+o;return o}};
 
-// ─── Arena ────────────────────────────────────────────────
-function enterArenaFn(){
-  const soul=S.soul||{};
-  setText('tb-hash', soul.soulhash||S.soulhash||'—');
-  setText('tb-lvl',  soul.level||1);
-  setText('hash-val',soul.hash_balance??100);
-  setText('gem-val', soul.gems??0);
-  // Menu dropdown — preenche dados
-  setText('dm-soulhash-val', soul.soulhash||'—');
-  setText('dm-wallet-val',   S.wallet?S.wallet.slice(0,6)+'...'+S.wallet.slice(-4):'—');
-  setText('dm-balance-val',  soul.hash_balance??100);
-  buildGrid();
-  buildPips(soul.energy??10,soul.maxEnergy??10);
-  buildYourCards(soul.ownedCards??{});
-  updateDim(soul.dimProgress??0);
-  showScreen('s-arena');
-}
-
-// ─── Grid ─────────────────────────────────────────────────
-function makeCardEl(card,i){
-  const el=document.createElement('div');
-  el.className=`arena-card ${card.cls}`;el.id=`card-${i}`;
-  const glow=document.createElement('div');glow.className='card-glow';
-  // ★ Carta MAGIA tem animação especial
-  const art=document.createElement('div');art.className='card-art';
-  if(card.isMagic){
-    const gem=document.createElement('span');gem.className='magic-gem';gem.textContent=card.emoji;
-    art.appendChild(gem);
-  } else {
-    art.textContent=card.emoji;
-  }
-  const name=document.createElement('div');name.className='card-name';name.textContent=card.name;
-  ['tl','tr','bl','br'].forEach(p=>{const c=document.createElement('span');c.className=`card-corner ${p}`;c.textContent='✦';el.appendChild(c);});
-  el.appendChild(glow);el.appendChild(art);el.appendChild(name);
-  return el;
-}
-function buildGrid(){const g=document.getElementById('card-grid');g.innerHTML='';for(let i=0;i<9;i++)g.appendChild(makeCardEl(CARDS[i%CARDS.length],i));}
-function renderGrid(grid){grid.forEach((id,i)=>{const card=CARD_MAP[id]||CARDS[0];const old=document.getElementById(`card-${i}`);if(old)old.replaceWith(makeCardEl(card,i));});}
-function buildPips(energy,max){const w=document.getElementById('epips');w.innerHTML='';for(let i=0;i<max;i++){const p=document.createElement('div');p.className='epip'+(i<energy?' on':'');p.id=`epip-${i}`;w.appendChild(p);}setText('energy-txt',`${energy}/${max}`);}
-function buildYourCards(ownedCards){
-  const w=document.getElementById('your-cards');w.innerHTML='';
-  const owned=Object.entries(ownedCards);
-  if(!owned.length){for(let i=0;i<5;i++){const mc=document.createElement('div');mc.className='mini-card';const s=document.createElement('span');s.style.cssText='font-size:18px;opacity:.2';s.textContent='🂠';const l=document.createElement('span');l.className='mini-lbl';l.textContent='VAZIA';mc.appendChild(s);mc.appendChild(l);w.appendChild(mc);}}
-  else{owned.forEach(([id])=>{const card=CARD_MAP[id];if(!card)return;const mc=document.createElement('div');mc.className='mini-card';const s=document.createElement('span');s.textContent=card.emoji;const l=document.createElement('span');l.className='mini-lbl';l.textContent=card.name;mc.appendChild(s);mc.appendChild(l);w.appendChild(mc);});}
-}
-function updateDim(p){const pct=Math.min(100,p/1500*100);document.getElementById('dim-fill').style.width=pct+'%';setText('dim-cur',p.toLocaleString('pt-BR'));}
-function updateHUD(){
-  const soul=S.soul;if(!soul)return;
-  setText('hash-val',(soul.hash_balance??100).toLocaleString('pt-BR'));
-  setText('gem-val',(soul.gems??0).toLocaleString('pt-BR'));
-  setText('tb-lvl',soul.level??1);
-  setText('energy-txt',`${soul.energy??10}/${soul.maxEnergy??10}`);
-  for(let i=0;i<(soul.maxEnergy??10);i++){const p=document.getElementById(`epip-${i}`);if(p)p.className='epip'+(i<(soul.energy??10)?' on':'');}
-  const xpPct=((soul.stats?.xp??0)%1000)/1000*100;
-  const xpEl=document.getElementById('tb-xpf');if(xpEl)xpEl.style.width=Math.min(100,xpPct)+'%';
-  updateDim(soul.dimProgress??0);
-  buildYourCards(soul.ownedCards??{});
-  // Atualiza menu dropdown
-  setText('dm-balance-val', soul.hash_balance??100);
-}
-function updateLastGrid(grid){const cells=document.querySelectorAll('#last-grid .lc');grid.forEach((id,i)=>{const c=CARD_MAP[id]||CARDS[0];if(cells[i])cells[i].textContent=c.emoji;});}
-
-// ═══════════════════════════════════════════════════════════
-//  SPIN — POST /spin com x-session-token
-// ═══════════════════════════════════════════════════════════
-async function doSpin(){
-  if(S.spinning)return;
-  const soul=S.soul||{};
-  if((soul.energy??10)<=0){toast('Sem energia da alma!');return;}
-  S.spinning=true;
-  document.getElementById('btn-spin').disabled=true;
-  sfxSpinStart();
-
-  try {
-    let grid,isWin,winPositions=[],combo='none',reward=0,magicCenter=false,energyBonus=0;
-
-    if(S.sessionToken){
-      const res=await fetch(`${API}/spin`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-session-token':S.sessionToken},
-        body:JSON.stringify({}),
-      });
-      if(res.ok){
-        const d=await res.json();
-        grid         = d.grid;
-        isWin        = d.isWin;
-        winPositions = d.winPositions??[];
-        combo        = d.combo??'none';
-        reward       = d.reward??0;
-        magicCenter  = d.magicCenter??false;
-        energyBonus  = d.energyBonus??0;
-        // ★ balance SEMPRE do servidor
-        if(S.soul && d.balance!==undefined) S.soul.hash_balance=d.balance;
-        if(S.soul && d.energy!==undefined)  S.soul.energy=d.energy;
-        if(S.soul && d.level!==undefined)   S.soul.level=d.level;
-        if(S.soul && d.stats)               S.soul.stats=d.stats;
-      } else {
-        const r=computeLocalSpin();
-        ({grid,isWin,winPositions,combo,reward}=r);
-      }
-    } else {
-      const r=computeLocalSpin();
-      ({grid,isWin,winPositions,combo,reward}=r);
+    // ═══════════════════════════════════════════════════════
+    // Wallet Manager
+    // ═══════════════════════════════════════════════════════
+    class WalletManager {
+      constructor(){this.wallet=null;this.publicKey=null;this.connected=false}
+      async connect(){
+        if(!window.solana?.isPhantom){alert('Instale a Phantom Wallet!');window.open('https://phantom.app/','_blank');return null}
+        try{const r=await window.solana.connect();this.publicKey=r.publicKey.toString();this.wallet=window.solana;this.connected=true;
+          window.solana.on('connect',()=>{this.publicKey=window.solana.publicKey.toString();this.connected=true});
+          window.solana.on('disconnect',()=>{this.publicKey=null;this.connected=false});
+          return this.publicKey}catch(e){console.error(e);return null}}
+      async signMessage(msg){if(!this.wallet)throw new Error('Wallet desconectada');const enc=new TextEncoder().encode(msg);const sig=await this.wallet.signMessage(enc,'utf8');return bs58.encode(sig.signature)}
+      disconnect(){if(this.wallet)this.wallet.disconnect();this.publicKey=null;this.connected=false}
     }
+    const walletManager = new WalletManager();
 
-    // Atualiza estado local não crítico
-    if(S.soul){
-      S.soul.dimProgress=(S.soul.dimProgress||0)+25+(isWin?50:0);
-      S.soul.phasePassed=isWin||S.soul.phasePassed;
-      if(isWin&&grid[0]) S.soul.ownedCards[grid[0]]=(S.soul.ownedCards[grid[0]]||0)+1;
-    }
-
-    await animateSpin(grid);
-    renderGrid(grid);
-    await sleep(300);
-
-    // Destaca resultado
-    if(isWin){
-      winPositions.forEach(i=>{const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-win');});
-      grid.forEach((_,i)=>{if(!winPositions.includes(i)){const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-lose');}});
-    }
-
-    // ★ Carta MAGIA no centro — mostra overlay especial
-    if(magicCenter){
-      setText('mb-energy',`+${energyBonus||20}`);
-      setText('mb-hash',  `+${reward}`);
-      await sleep(600);
-      document.getElementById('magic-bonus-overlay').classList.add('on');
-      sfxMagic();
-    }
-
-    updateLastGrid(grid);
-    updateHUD();
-    if(!magicCenter){
-      await sleep(500);
-      showResult({grid,isWin,winPositions,combo,reward});
-    }
-
-  } catch(e){
-    toast('Erro: '+sanitize(e.message));
-    console.error('[SoulHash] spin:',e);
-  } finally {
-    S.spinning=false;
-    document.getElementById('btn-spin').disabled=false;
-    updateHUD();
-  }
-}
-
-function closeMagicBonus(){
-  document.getElementById('magic-bonus-overlay').classList.remove('on');
-  const soul=S.soul||{};
-  const r={isWin:true,grid:Array(9).fill('magic'),winPositions:[4],combo:'magic_line',reward:20};
-  showResult(r);
-}
-
-// ─── Spin local fallback ──────────────────────────────────
-function computeLocalSpin(){
-  const isWin=Math.random()<0.30;
-  const grid=Array(9).fill(null).map(()=>CARDS[Math.floor(Math.random()*CARDS.length)].id);
-  const winner=CARDS[Math.floor(Math.random()*CARDS.length)].id;
-  if(!isWin){let t=0;while(hasWinLocal(grid)&&t++<50)for(let i=0;i<9;i++)grid[i]=CARDS[Math.floor(Math.random()*CARDS.length)].id;return {isWin:false,grid,combo:'none',winPositions:[],reward:10};}
-  const roll=Math.random();
-  if(roll<0.50){const row=Math.floor(Math.random()*3);grid[row*3]=grid[row*3+1]=grid[row*3+2]=winner;return {isWin:true,grid,combo:'3linha',winPositions:[row*3,row*3+1,row*3+2],reward:50};}
-  else if(roll<0.75){const d=Math.random()<.5?[0,4,8]:[2,4,6];d.forEach(i=>grid[i]=winner);return {isWin:true,grid,combo:'diagonal',winPositions:d,reward:80};}
-  else{[0,2,4,6,8].forEach(i=>grid[i]=winner);return {isWin:true,grid,combo:'cruz',winPositions:[0,2,4,6,8],reward:120};}
-}
-function hasWinLocal(g){return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(([a,b,c])=>g[a]&&g[a]===g[b]&&g[b]===g[c]);}
-
-async function animateSpin(finalGrid){
-  return new Promise(resolve=>{
-    const start=Date.now(),dur=1800;
-    function tick(){
-      const el=Date.now()-start;
-      if(el>=dur){renderGrid(finalGrid);resolve();return;}
-      renderGrid(Array(9).fill(null).map(()=>CARDS[Math.floor(Math.random()*CARDS.length)].id));
-      if(Math.random()<0.25)sfxCardFlip();
-      setTimeout(tick,55+Math.floor((el/dur)**2*260));
-    }
-    tick();
-  });
-}
-
-function showResult(result){
-  const ovl=document.getElementById('result-ovl'),box=document.getElementById('result-box'),isWin=result.isWin;
-  box.className='result-box '+(isWin?'rbox-win':'rbox-lose');
-  if(isWin)sfxWin();else sfxLose();
-  setText('r-emoji',isWin?'🏆':'💀');
-  setText('r-title',isWin?'VITÓRIA!':'DERROTA');
-  setText('r-desc', isWin?'Você combinou 3 cartas!':'Nenhuma combinação. Tente novamente!');
-  setText('r-combo',COMBO_LABELS[result.combo]||'');
-  setText('r-reward',isWin?`+${result.reward} Hash`:`+${result.reward??10} XP`);
-  if(isWin){
-    const isMagic=result.combo==='magic_line';
-    const epic=isMagic?EPIC_CARDS[4]:EPIC_CARDS[Math.floor(Math.random()*4)];
-    const rb=document.getElementById('reward-box');rb.innerHTML='';
-    [['rwd-emoji','span',epic.emoji],['rwd-name','div',epic.name],['rwd-stat','div',epic.stats]].forEach(([cls,tag,txt])=>{const el=document.createElement(tag);el.className=cls;el.textContent=txt;rb.appendChild(el);});
-    const cb=document.getElementById('combo-bonus');cb.innerHTML='';
-    const n=document.createElement('div');n.style.cssText='font-family:Cinzel,serif;font-size:13px;color:var(--sombra);letter-spacing:1px;margin-bottom:5px';n.textContent=COMBO_LABELS[result.combo]||'';
-    const d=document.createElement('div');d.style.cssText='font-size:12px;color:var(--text-d)';d.textContent=`+${result.reward} Hash`;
-    cb.appendChild(n);cb.appendChild(d);
-  }
-  setText('r-btn',(S.soul?.phasePassed&&isWin)?'✦ AVANÇAR NO UNIVERSO':isWin?'CONTINUAR':'TENTAR NOVAMENTE');
-  ovl.className='result-ovl on';
-}
-function closeResult(){
-  document.getElementById('result-ovl').className='result-ovl';
-  for(let i=0;i<9;i++){const el=document.getElementById(`card-${i}`);if(el){el.classList.remove('card-win','card-lose');}}
-}
-
-// ═══════════════════════════════════════════════════════════
-//  DROPDOWN MENU
-// ═══════════════════════════════════════════════════════════
-function toggleMenu(){
-  const m=document.getElementById('dropdown-menu');
-  m.classList.toggle('open');
-  // Atualiza dados ao abrir
-  if(m.classList.contains('open')&&S.soul){
-    setText('dm-soulhash-val',S.soul.soulhash||'—');
-    setText('dm-wallet-val',  S.wallet?S.wallet.slice(0,6)+'...'+S.wallet.slice(-4):'—');
-    setText('dm-balance-val', S.soul.hash_balance??0);
-  }
-}
-// Fecha menu ao clicar fora
-document.addEventListener('click',e=>{
-  const wrap=document.getElementById('dropdown-menu')?.closest('.menu-wrap');
-  if(wrap&&!wrap.contains(e.target)) document.getElementById('dropdown-menu')?.classList.remove('open');
-});
-
-function menuToggleSound(){
-  toggleMute();
-  const isMuted=AUDIO.muted;
-  setText('dm-sound-icon',isMuted?'🔇':'🔊');
-  setText('dm-sound-lbl', isMuted?'Ativar Música':'Silenciar Música');
-  document.getElementById('dropdown-menu').classList.remove('open');
-}
-
-function menuLogout(){
-  S.wallet=null;S.soulhash=null;S.sessionToken=null;S.soul=null;
-  document.getElementById('dropdown-menu').classList.remove('open');
-  setStep(1);setStatus('','');
-  document.getElementById('wallet-pill').style.display='none';
-  document.getElementById('btn-connect').disabled=false;
-  document.getElementById('btn-connect').textContent='CONECTAR PHANTOM WALLET';
-  document.getElementById('btn-sign').style.display='none';
-  showScreen('s-connect');
-  toast('Sessão encerrada.');
-}
-
-// ═══════════════════════════════════════════════════════════
-//  SAQUE — POST /reward
-// ═══════════════════════════════════════════════════════════
-function openWithdraw(){
-  document.getElementById('dropdown-menu').classList.remove('open');
-  if(!S.sessionToken){toast('Faça login primeiro');return;}
-  const bal=S.soul?.hash_balance??0;
-  setText('wd-balance-show',bal);
-  document.getElementById('wd-amount').value='';
-  document.getElementById('wd-feedback').style.display='none';
-  document.getElementById('wd-feedback').textContent='';
-  document.getElementById('btn-wd-confirm').disabled=false;
-  document.getElementById('withdraw-modal').classList.add('on');
-}
-function closeWithdraw(){document.getElementById('withdraw-modal').classList.remove('on');}
-
-async function confirmWithdraw(){
-  const amount=Number(document.getElementById('wd-amount').value);
-  const bal   =S.soul?.hash_balance??0;
-  const fb    =document.getElementById('wd-feedback');
-  const btn   =document.getElementById('btn-wd-confirm');
-
-  // Validações no frontend (saldo é confirmado no servidor)
-  if(!amount||amount<20){showWdFeedback('Valor mínimo é 20 Hash.','error');return;}
-  if(amount>bal){showWdFeedback(`Saldo insuficiente. Disponível: ${bal} Hash.`,'error');return;}
-
-  btn.disabled=true;btn.textContent='ENVIANDO...';
-
-  try {
-    const res=await fetch(`${API}/reward`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-session-token':S.sessionToken},
-      body:JSON.stringify({soulhash:S.soulhash,amount}),
-    });
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error||`HTTP ${res.status}`);
-
-    // ★ balance do servidor — fonte de verdade
-    if(S.soul&&data.remainingBalance!==undefined) S.soul.hash_balance=data.remainingBalance;
-    updateHUD();
-
-    sfxWin();
-    showWdFeedback(`✦ ${amount} Hash enviados para sua wallet! Tx: ${data.txSimulated}`,'success');
-    toast(`✦ Saque de ${amount} Hash realizado!`);
-    setTimeout(()=>closeWithdraw(),3000);
-
-  } catch(e){
-    showWdFeedback('Erro: '+sanitize(e.message),'error');
-    btn.disabled=false;btn.textContent='SACAR';
-  }
-}
-
-function showWdFeedback(msg,type){
-  const fb=document.getElementById('wd-feedback');
-  fb.textContent=msg;fb.className=`wd-feedback ${type}`;fb.style.display='block';
-}
-
-// ─── Init ─────────────────────────────────────────────────
-window.addEventListener('load',async()=>{
-  setTimeout(async()=>{
-    const loadEl=document.getElementById('s-load');
-    loadEl.style.opacity='0';loadEl.style.pointerEvents='none';
-    setTimeout(()=>{loadEl.classList.remove('active');showScreen('s-connect');},500);
-    try {
-      const phantom=window.phantom?.solana??window.solana;
-      if(phantom?.isConnected&&phantom.publicKey){
-        S.wallet=phantom.publicKey.toString();
-        const short=S.wallet.slice(0,6)+'...'+S.wallet.slice(-4);
-        document.getElementById('wallet-pill').style.display='flex';
-        setText('wallet-addr-short','✓ '+short+' conectada');
-        document.getElementById('btn-connect').disabled=true;
-        document.getElementById('btn-connect').textContent='✓ PHANTOM CONECTADA';
-        setStep(2);
-        setStatus('Wallet detectada. Assine para autenticar.','info');
-        document.getElementById('btn-sign').style.display='block';
-      }
-    } catch(e){}
-  },1400);
-});
-
-document.getElementById('btn-connect').addEventListener('click',connectWallet);
-document.getElementById('btn-sign').addEventListener('click',signAndLogin);
-document.getElementById('btn-enter-arena').addEventListener('click',()=>{sfxButton();enterArenaFn();});
-document.getElementById('btn-spin').addEventListener('click',doSpin);
-document.getElementById('r-btn').addEventListener('click',()=>{sfxButton();closeResult();});
-
-// ─── Áudio ────────────────────────────────────────────────
-const AUDIO={ctx:null,masterGain:null,muted:false,volume:0.40,started:false,musicNodes:[]};
-function initAudio(){if(AUDIO.ctx)return;AUDIO.ctx=new(window.AudioContext||window.webkitAudioContext)();AUDIO.masterGain=AUDIO.ctx.createGain();AUDIO.masterGain.gain.setValueAtTime(AUDIO.volume,AUDIO.ctx.currentTime);AUDIO.masterGain.connect(AUDIO.ctx.destination);}
-function resumeCtx(){if(AUDIO.ctx?.state==='suspended')AUDIO.ctx.resume();}
-function startMusic(){
-  if(!AUDIO.ctx||AUDIO.started)return;AUDIO.started=true;resumeCtx();
-  const ctx=AUDIO.ctx,now=ctx.currentTime;
-  [55,55.3].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),filt=ctx.createBiquadFilter();osc.type='sawtooth';osc.frequency.setValueAtTime(freq,now);filt.type='lowpass';filt.frequency.value=180;filt.Q.value=1.2;gain.gain.setValueAtTime(0.28-i*0.05,now);osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);osc.start(now);AUDIO.musicNodes.push(osc,gain,filt);});
-  const NOTES=[110,130.81,146.83,164.81,196,220];let noteIdx=0;
-  function playArpNote(){if(!AUDIO.started||AUDIO.muted)return;const t=ctx.currentTime,freq=NOTES[noteIdx++%NOTES.length];const osc=ctx.createOscillator(),env=ctx.createGain(),filt=ctx.createBiquadFilter(),rev=createReverb(ctx,2.5);osc.type='triangle';osc.frequency.setValueAtTime(freq,t);osc.frequency.linearRampToValueAtTime(freq*1.002,t+0.8);osc.frequency.linearRampToValueAtTime(freq,t+1.6);filt.type='bandpass';filt.frequency.value=freq*2;filt.Q.value=2;env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(0.22,t+0.8);env.gain.linearRampToValueAtTime(0.12,t+2.0);env.gain.linearRampToValueAtTime(0,t+3.5);osc.connect(filt);filt.connect(env);env.connect(rev);rev.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+3.8);setTimeout(playArpNote,2200+Math.random()*1600);}
-  setTimeout(playArpNote,600);
-  [220,293.66,329.63].forEach((freq,i)=>{const osc=ctx.createOscillator(),tremOsc=ctx.createOscillator(),tremGain=ctx.createGain(),gain=ctx.createGain(),filt=ctx.createBiquadFilter();osc.type='sine';osc.frequency.setValueAtTime(freq,now);osc.detune.setValueAtTime(-10+i*5,now);tremOsc.type='sine';tremOsc.frequency.setValueAtTime(0.15+i*0.04,now);tremGain.gain.setValueAtTime(0.08,now);tremOsc.connect(tremGain);tremGain.connect(gain.gain);filt.type='lowpass';filt.frequency.value=800;gain.gain.setValueAtTime(0.06-i*0.01,now);gain.gain.linearRampToValueAtTime(0.10-i*0.02,now+4);osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);tremOsc.start(now);osc.start(now);AUDIO.musicNodes.push(osc,tremOsc,tremGain,gain,filt);});
-  function pulseSubBass(){if(!AUDIO.started)return;const t=ctx.currentTime,osc=ctx.createOscillator(),env=ctx.createGain(),filt=ctx.createBiquadFilter();osc.type='sine';osc.frequency.setValueAtTime(55,t);osc.frequency.linearRampToValueAtTime(40,t+0.8);filt.type='lowpass';filt.frequency.value=100;env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(0.35,t+0.05);env.gain.exponentialRampToValueAtTime(0.001,t+0.9);osc.connect(filt);filt.connect(env);env.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+1);setTimeout(pulseSubBass,3600+Math.random()*2400);}
-  setTimeout(pulseSubBass,1800);updateWaves(true);
-}
-function createReverb(ctx,duration){const conv=ctx.createConvolver(),sr=ctx.sampleRate,len=sr*duration,imp=ctx.createBuffer(2,len,sr);for(let ch=0;ch<2;ch++){const d=imp.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5);}conv.buffer=imp;const wet=ctx.createGain();wet.gain.setValueAtTime(0.35,ctx.currentTime);conv.connect(wet);return wet;}
-function sfxCardFlip(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;const buf=ctx.createBuffer(1,ctx.sampleRate*0.08,ctx.sampleRate);const data=buf.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,3);const src=ctx.createBufferSource(),filt=ctx.createBiquadFilter(),gain=ctx.createGain();src.buffer=buf;filt.type='bandpass';filt.frequency.value=3000;filt.Q.value=0.8;gain.gain.setValueAtTime(0.18,t);gain.gain.linearRampToValueAtTime(0,t+0.08);src.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);src.start(t);}
-function sfxSpinStart(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;const osc=ctx.createOscillator(),gain=ctx.createGain(),filt=ctx.createBiquadFilter();osc.type='sawtooth';osc.frequency.setValueAtTime(80,t);osc.frequency.exponentialRampToValueAtTime(600,t+0.5);filt.type='highpass';filt.frequency.value=200;gain.gain.setValueAtTime(0.22,t);gain.gain.linearRampToValueAtTime(0,t+0.5);osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+0.5);}
-function sfxWin(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[440,523.25,659.25,880,1046.5].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),rev=createReverb(ctx,1.5),st=t+i*0.10;osc.type='triangle';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.25,st+0.05);gain.gain.exponentialRampToValueAtTime(0.001,st+0.8);osc.connect(gain);gain.connect(rev);rev.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+0.9);});setTimeout(()=>{const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(2800,ctx.currentTime);osc.frequency.linearRampToValueAtTime(1800,ctx.currentTime+0.8);gain.gain.setValueAtTime(0.1,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);osc.connect(gain);gain.connect(AUDIO.masterGain);osc.start();osc.stop(ctx.currentTime+0.9);},300);}
-function sfxLose(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[220,196,174.61,164.81].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),filt=ctx.createBiquadFilter(),st=t+i*0.18;osc.type='sawtooth';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.18,st+0.05);gain.gain.exponentialRampToValueAtTime(0.001,st+0.7);filt.type='lowpass';filt.frequency.value=800;osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+0.8);});const noise=ctx.createBuffer(1,ctx.sampleRate*0.6,ctx.sampleRate);const nd=noise.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*(1-i/nd.length);const src=ctx.createBufferSource(),filt=ctx.createBiquadFilter(),gain=ctx.createGain();src.buffer=noise;filt.type='lowpass';filt.frequency.value=80;gain.gain.setValueAtTime(0.3,t+0.5);gain.gain.linearRampToValueAtTime(0,t+1.2);src.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);src.start(t+0.5);}
-function sfxConnect(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[523.25,783.99].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),st=t+i*0.15;osc.type='sine';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.2,st+0.04);gain.gain.exponentialRampToValueAtTime(0.001,st+1.2);osc.connect(gain);gain.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+1.3);});}
-function sfxButton(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(660,t);osc.frequency.linearRampToValueAtTime(880,t+0.06);gain.gain.setValueAtTime(0.12,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.12);osc.connect(gain);gain.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+0.14);}
-
-// ★ Som especial para carta MAGIA
-function sfxMagic(){
-  if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();
-  const ctx=AUDIO.ctx,t=ctx.currentTime;
-  // Arpejo mágico ascendente em púrpura
-  [261.63,329.63,392,523.25,659.25,784,1046.5].forEach((freq,i)=>{
-    const osc=ctx.createOscillator(),gain=ctx.createGain(),rev=createReverb(ctx,3),st=t+i*0.12;
-    osc.type='sine';osc.frequency.setValueAtTime(freq,st);
-    gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.2,st+0.05);gain.gain.exponentialRampToValueAtTime(0.001,st+1.2);
-    osc.connect(gain);gain.connect(rev);rev.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+1.5);
-  });
-}
-
-function toggleMute(){AUDIO.muted=!AUDIO.muted;if(AUDIO.masterGain)AUDIO.masterGain.gain.setTargetAtTime(AUDIO.muted?0:AUDIO.volume,AUDIO.ctx.currentTime,0.1);const btn=document.getElementById('btn-mute');if(btn)btn.textContent=AUDIO.muted?'🔇':'🔊';updateWaves(!AUDIO.muted);}
-function setVolume(val){AUDIO.volume=val/100;if(AUDIO.masterGain&&!AUDIO.muted)AUDIO.masterGain.gain.setTargetAtTime(AUDIO.volume,AUDIO.ctx.currentTime,0.05);}
-function updateWaves(playing){document.querySelectorAll('.wave-bar').forEach(b=>{b.className='wave-bar'+(playing?'':' paused');});}
-function audioBootstrap(){if(AUDIO.ctx)return;initAudio();startMusic();document.removeEventListener('click',audioBootstrap);document.removeEventListener('keydown',audioBootstrap);}
-document.addEventListener('click',audioBootstrap);
-document.addEventListener('keydown',audioBootstrap);
-document.getElementById('btn-mute').addEventListener('click',e=>{e.stopPropagation();if(!AUDIO.ctx){initAudio();startMusic();}toggleMute();});
-document.getElementById('vol-slider').addEventListener('input',e=>{e.stopPropagation();setVolume(Number(e.target.value));});
-</script>
-</body>
-</html>
+    // ═══════════════════════════════════════════════════════
+    // DOM Elements
+    // ═══════════════════════════════════════════════════════
+    const $ = id => document.getElementById(id);
+    const screens = {login:$('loginScreen'),game:$('gameScreen')};
+    const els = {
+      connect:$('connectWalletBtn'),menu:$('menuBtn'),dropdown:$('dropdownMenu'),spin:$('spinBtn'),
+      grid:$('cardsGrid'),energyFill:$('energyFill'),energyText:$('energyText'),
+      hash:$('hashBalance'),usd:$('usdBalance'),soul:$('userSoulhash'),lvl:$('userLevel'),
+      msg:$('lastMessage'),reward:$('rewardAmount'),mini:$('miniGrid'),
+      info:$('infoBtn'),vol:$('volumeBtn'),with:$('withdrawBtn'),out:$('logoutBtn'),
+      infoModal:$('infoModal'),withModal:$('withdrawModal'),confirmW:$('confirmWithdrawBtn')
+    };
