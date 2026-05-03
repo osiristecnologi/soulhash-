@@ -1,21 +1,29 @@
 {
-  "name": "soulhash-api",
-  "version": "5.0.0",
-  "description": "SoulHash Backend v5 — Magic Card + Energy + Reward",
+  "name": "soulhash",
+  "version": "1.0.0",
+  "description": "Jogo de cartas 3x3 com recompensas em Hash - Integração Phantom Wallet",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev":   "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "echo 'Frontend estático - pronto para deploy'",
+    "test": "node -e \"fetch('https://soulhash-api.onrender.com/').then(r=>r.json()).then(console.log).catch(console.error)\""
   },
+  "keywords": ["solana", "phantom", "game", "crypto", "cards"],
+  "author": "SoulHash Team",
+  "license": "MIT",
   "dependencies": {
-    "cors":              "^2.8.5",
-    "dotenv":            "^16.0.0",
-    "express":           "^4.18.0",
-    "express-rate-limit":"^7.0.0",
-    "helmet":            "^7.0.0"
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "dotenv": "^16.3.1",
+    "bs58": "^5.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "nodemon": "^3.0.2"
   },
-  "engines": { "node": ">=18.0.0" }
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
