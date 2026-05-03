@@ -1,1076 +1,1480 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SoulHash</title>
-  <meta name="description" content="Jogo de cartas 3x3 com recompensas em crypto">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-  <style>
-    :root{--p:#8b5cf6;--pd:#7c3aed;--s:#f59e0b;--bg:#0f0f1a;--bgd:#080810;--card:#1a1a2e;--txt:#e2e8f0;--muted:#94a3b8;--brd:#2d2d44;--ok:#10b981;--err:#ef4444;--gold:#fbbf24}
-    *{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;background:var(--bgd);color:var(--txt);min-height:100vh}.cinzel{font-family:Cinzel,serif}
-    .screen{display:none;min-height:100vh}.screen.active{display:flex;flex-direction:column}
-    #loginScreen{align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bgd),var(--bg));position:relative;overflow:hidden}
-    #loginScreen::before{content:'';position:absolute;width:200%;height:200%;background:radial-gradient(circle,rgba(139,92,246,.1),transparent 70%);animation:pulse 4s ease-in-out infinite}@keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.8}}
-    .login-container{text-align:center;z-index:1;padding:2rem;max-width:600px;width:90%}
-    .logo{margin-bottom:3rem}.crystal-icon{font-size:5rem;color:var(--p);text-shadow:0 0 30px rgba(139,92,246,.8);animation:float 3s ease-in-out infinite}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
-    .logo h1{font-size:3.5rem;color:var(--p);text-shadow:0 0 20px rgba(139,92,246,.6);margin:1rem 0}.subtitle{font-size:1.5rem;color:var(--muted);letter-spacing:.5rem}
-    .wallet-section{margin:2rem 0}.wallet-section p{color:var(--muted);margin-bottom:1.5rem;font-size:1.1rem}
-    .btn-primary{background:linear-gradient(135deg,var(--p),var(--pd));color:#fff;border:none;padding:1rem 2.5rem;font-size:1.1rem;font-weight:600;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:.75rem;transition:all .3s;box-shadow:0 4px 15px rgba(139,92,246,.4)}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(139,92,246,.6)}.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
-    .phantom-icon{font-size:1.5rem}.language-selector{display:flex;align-items:center;gap:.5rem;justify-content:center;margin-top:2rem}
-    .language-selector select{background:var(--card);color:var(--txt);border:1px solid var(--brd);padding:.5rem 1rem;border-radius:8px;cursor:pointer;font-size:1rem}
-    #gameScreen{background:var(--bg)}.game-header{background:var(--card);border-bottom:2px solid var(--brd);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:100;flex-wrap:wrap;gap:1rem}
-    .header-left,.header-right{display:flex;align-items:center;gap:1.5rem}.user-info{display:flex;flex-direction:column;gap:.25rem}
-    .soulhash-display .label{font-size:.7rem;color:var(--muted);letter-spacing:.1rem}.soulhash-display .hash{font-family:monospace;font-size:.9rem;color:var(--p)}
-    .level-display{font-size:.9rem;color:var(--gold)}.game-title{font-size:1.8rem;color:var(--gold);text-shadow:0 0 20px rgba(251,191,36,.4)}
-    .game-subtitle{font-size:.75rem;color:var(--muted);letter-spacing:.2rem}.currency-display{display:flex;gap:1rem}
-    .hash-balance,.usd-balance{display:flex;align-items:center;gap:.5rem;font-weight:600;background:var(--bg);padding:.3rem .8rem;border-radius:6px}.hash-balance{color:var(--p)}.usd-balance{color:var(--ok)}
-    .menu-btn{background:var(--bg);border:1px solid var(--brd);color:var(--txt);font-size:1.5rem;width:45px;height:45px;border-radius:8px;cursor:pointer;transition:all .3s}.menu-btn:hover{background:var(--p);border-color:var(--p)}
-    .dropdown-menu{position:absolute;top:75px;right:2rem;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:.5rem;min-width:200px;display:none;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,.5)}.dropdown-menu.active{display:block}
-    .menu-item{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;cursor:pointer;border-radius:8px;transition:all .2s}.menu-item:hover{background:var(--bg)}
-    .game-main{display:grid;grid-template-columns:250px 1fr 250px;gap:1rem;padding:1rem;flex:1;max-width:1400px;margin:0 auto;width:100%}
-    .sidebar{display:flex;flex-direction:column;gap:1rem}.elements-panel,.combinations-panel,.last-result-panel,.reward-panel,.dimension-panel{background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1rem}
-    .elements-panel h3,.combinations-panel h3,.last-result-panel h3,.reward-panel h3,.dimension-panel h3{font-size:.85rem;color:var(--muted);margin-bottom:.75rem;letter-spacing:.1rem;text-transform:uppercase}
-    .element-item,.combo-item{display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid var(--brd);font-size:.9rem}.element-item:last-child,.combo-item:last-child{border-bottom:none}
-    .element-icon,.combo-icon{font-size:1.3rem;width:35px;height:35px;display:flex;align-items:center;justify-content:center;border-radius:6px}
-    .element-icon.luz{background:rgba(251,191,36,.2)}.element-icon.sombra{background:rgba(139,92,246,.2)}.element-icon.caos{background:rgba(239,68,68,.2)}.element-icon.empatia{background:rgba(16,185,129,.2)}.element-icon.equilibrio{background:rgba(59,130,246,.2)}
-    .element-item strong,.combo-item strong{display:block;font-size:.85rem;margin-bottom:.1rem}.element-item small,.combo-item small{color:var(--muted);font-size:.7rem}
-    .combo-item.special{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(251,191,36,.1));border-radius:8px;padding:.6rem;margin-top:.4rem}
-    .game-board{display:flex;flex-direction:column;align-items:center;gap:1rem}.energy-bar{width:100%;max-width:450px;background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:.75rem}
-    .energy-info{display:flex;justify-content:space-between;margin-bottom:.4rem;font-size:.85rem}.energy-progress{height:10px;background:var(--bg);border-radius:5px;overflow:hidden}
-    .energy-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--s));transition:width .5s ease;border-radius:5px}.energy-regen{text-align:right;margin-top:.2rem;color:var(--muted);font-size:.7rem}
-    .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;width:100%;max-width:450px;aspect-ratio:1}
-    .card-slot{background:var(--card);border:2px solid var(--brd);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2.5rem;transition:all .3s;position:relative;overflow:hidden;min-height:100px}
-    .card-slot::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(139,92,246,.1));opacity:0;transition:opacity .3s}.card-slot:hover::before{opacity:1}
-    .card-slot.win{border-color:var(--gold);box-shadow:0 0 20px rgba(251,191,36,.5);animation:winPulse 1s ease}.card-slot.crystal{border-color:var(--p);background:linear-gradient(135deg,rgba(139,92,246,.3),rgba(251,191,36,.3));animation:crystalGlow 2s ease-in-out infinite}
-    @keyframes winPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}@keyframes crystalGlow{0%,100%{box-shadow:0 0 20px rgba(139,92,246,.5)}50%{box-shadow:0 0 40px rgba(139,92,246,.8),0 0 60px rgba(251,191,36,.4)}}
-    .card{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;padding:.3rem}.card-icon{font-size:2rem}.card-name{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05rem}
-    .spin-section{text-align:center;width:100%;max-width:450px}.spin-btn{width:100%;padding:1.25rem;font-size:1.3rem;font-weight:800;text-transform:uppercase;letter-spacing:.2rem;background:linear-gradient(135deg,var(--p),var(--s));border:none;border-radius:16px;color:#fff;cursor:pointer;transition:all .3s;box-shadow:0 4px 20px rgba(139,92,246,.4);position:relative;overflow:hidden}
-    .spin-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transition:left .5s}.spin-btn:hover::before{left:100%}
-    .spin-btn:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(139,92,246,.6)}.spin-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-    .spin-cost{display:block;font-size:.85rem;font-weight:400;margin-top:.2rem;opacity:.9}.spin-info{margin-top:.75rem}.message{color:var(--muted);font-size:.9rem;min-height:1.5rem}
-    .message.success{color:var(--ok)}.message.crystal{color:var(--p);font-weight:600;animation:textPulse 1s ease-in-out infinite}@keyframes textPulse{0%,100%{opacity:1}50%{opacity:.7}}
-    .mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem}.mini-card{aspect-ratio:1;background:var(--bg);border:1px solid var(--brd);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1rem}
-    .reward-display{text-align:center;padding:1rem;background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(251,191,36,.1));border-radius:12px;border:1px solid var(--brd)}
-    .reward-icon{font-size:2.5rem;margin-bottom:.3rem}.reward-amount{font-size:1.75rem;font-weight:800;color:var(--gold)}.reward-type{color:var(--muted);font-size:.85rem;margin-top:.2rem}
-    .dimension-progress{margin:.75rem 0}.progress-bar{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:.4rem}
-    .progress-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--s));border-radius:3px}.btn-secondary{width:100%;padding:.6rem;background:transparent;border:1px solid var(--brd);color:var(--txt);border-radius:8px;cursor:pointer;transition:all .3s;font-size:.9rem}.btn-secondary:hover{background:var(--bg);border-color:var(--p)}
-    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(5px)}.modal.active{display:flex}
-    .modal-content{background:var(--card);border:1px solid var(--brd);border-radius:16px;width:90%;max-width:450px;max-height:80vh;overflow-y:auto}
-    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:1.25rem;border-bottom:1px solid var(--brd)}.modal-header h2{font-size:1.3rem}
-    .modal-close{background:none;border:none;color:var(--txt);font-size:1.75rem;cursor:pointer;line-height:1}.modal-body{padding:1.25rem}
-    .info-item{display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--brd);font-size:.95rem}.info-item:last-child{border-bottom:none}
-    .withdraw-form{display:flex;flex-direction:column;gap:.75rem}.withdraw-form label{font-weight:600;margin-bottom:.2rem;font-size:.9rem}
-    .withdraw-form input{background:var(--bg);border:1px solid var(--brd);color:var(--txt);padding:.6rem;border-radius:8px;font-size:1rem;width:100%}.withdraw-form input:focus{outline:none;border-color:var(--p)}
-    .status-msg{padding:.75rem;margin:.75rem 0;border-radius:8px;font-size:.9rem;text-align:center}.status-msg.error{background:rgba(239,68,68,.2);color:var(--err);border:1px solid var(--err)}.status-msg.success{background:rgba(16,185,129,.2);color:var(--ok);border:1px solid var(--ok)}
-    @media(max-width:1024px){.game-main{grid-template-columns:1fr}.sidebar{flex-direction:row;flex-wrap:wrap}.sidebar>div{flex:1;min-width:200px}}
-    @media(max-width:768px){.game-header{padding:.75rem}.game-title{font-size:1.3rem;order:-1;width:100%;text-align:center}.cards-grid{gap:.5rem}.card-slot{min-height:70px;font-size:1.75rem}.card-icon{font-size:1.5rem}.card-name{font-size:.6rem}.sidebar{flex-direction:column}.logo h1{font-size:2.5rem}.crystal-icon{font-size:3.5rem}}
-    .hidden{display:none!important}.animate-spin{animation:spin 1s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoulHash Arena - Slot 3x3</title>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/bs58@latest/browser.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0b2e 50%, #0a0a0a 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
+            border-bottom: 2px solid #ffd700;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        .header-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .balance-display {
+            background: linear-gradient(135deg, #2d2d44, #1a1a2e);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid #ffd700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .balance-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(45deg, #9333ea, #7c3aed);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .menu-btn {
+            background: linear-gradient(135deg, #4a4a6a, #2d2d44);
+            border: 2px solid #ffd700;
+            color: #ffd700;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.3s;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Menu Dropdown */
+        .menu-dropdown {
+            position: fixed;
+            top: 70px;
+            right: 30px;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 300px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        .menu-dropdown.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .menu-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,215,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .hash-info {
+            font-family: monospace;
+            background: rgba(147, 51, 234, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Connect Wallet Section */
+        .connect-section {
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .connect-btn {
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
+            border: none;
+            color: white;
+            padding: 20px 60px;
+            font-size: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
+        }
+
+        .connect-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.6);
+        }
+
+        /* Game Board */
+        .game-board {
+            display: none;
+        }
+
+        .game-board.active {
+            display: block;
+        }
+
+        /* Energy Bar */
+        .energy-container {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 2px solid #9333ea;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .energy-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .energy-bar {
+            height: 30px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9333ea, #7c3aed, #a855f7);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+        }
+
+        /* Slot Grid */
+        .slot-container {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 3px solid #ffd700;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.2);
+        }
+
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            aspect-ratio: 3/4;
+            background: linear-gradient(135deg, #2d2d44, #1a1a2e);
+            border: 3px solid #4a4a6a;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            min-height: 150px;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        /* ANIMAÇÃO DE GIRO */
+        .card.spinning {
+            animation: spinCard 0.1s linear infinite;
+            filter: blur(2px);
+        }
+
+        @keyframes spinCard {
+            0% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-5px) rotate(1deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(5px) rotate(-1deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        .card.winning {
+            animation: winPulse 1s ease infinite;
+            border-color: #ffd700;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+        }
+
+        @keyframes winPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .card.crystal {
+            border-color: #9333ea;
+            box-shadow: 0 0 30px rgba(147, 51, 234, 0.8);
+            animation: crystalGlow 2s ease infinite;
+        }
+
+        @keyframes crystalGlow {
+            0%, 100% { box-shadow: 0 0 30px rgba(147, 51, 234, 0.8); }
+            50% { box-shadow: 0 0 50px rgba(147, 51, 234, 1); }
+        }
+
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .card.spinning .card-icon {
+            animation: iconShuffle 0.1s linear infinite;
+        }
+
+        @keyframes iconShuffle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+
+        .card-label {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .card[data-type="light"] { border-color: #ffd700; }
+        .card[data-type="light"] .card-icon { filter: drop-shadow(0 0 10px #ffd700); }
+        
+        .card[data-type="shadow"] { border-color: #9333ea; }
+        .card[data-type="shadow"] .card-icon { filter: drop-shadow(0 0 10px #9333ea); }
+        
+        .card[data-type="chaos"] { border-color: #ef4444; }
+        .card[data-type="chaos"] .card-icon { filter: drop-shadow(0 0 10px #ef4444); }
+        
+        .card[data-type="empathy"] { border-color: #22c55e; }
+        .card[data-type="empathy"] .card-icon { filter: drop-shadow(0 0 10px #22c55e); }
+        
+        .card[data-type="balance"] { border-color: #3b82f6; }
+        .card[data-type="balance"] .card-icon { filter: drop-shadow(0 0 10px #3b82f6); }
+        
+        .card[data-type="crystal"] { 
+            border-color: #a855f7;
+            background: linear-gradient(135deg, #2d1b4e, #1a0b2e);
+        }
+
+        /* Spin Button */
+        .spin-container {
+            text-align: center;
+        }
+
+        .spin-btn {
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
+            border: 3px solid #ffd700;
+            color: white;
+            padding: 20px 80px;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.5);
+        }
+
+        .spin-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.8);
+        }
+
+        .spin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: linear-gradient(135deg, #4a4a6a, #2d2d44);
+        }
+
+        .spin-btn.spinning {
+            animation: buttonPulse 0.5s ease infinite;
+        }
+
+        @keyframes buttonPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+        }
+
+        .spin-cost {
+            margin-top: 10px;
+            color: #9333ea;
+            font-size: 14px;
+        }
+
+        /* Result Message */
+        .result-message {
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-message.show {
+            display: block;
+        }
+
+        .result-message.win {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+            border: 2px solid #22c55e;
+            color: #22c55e;
+        }
+
+        .result-message.lose {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+            border: 2px solid #ef4444;
+            color: #ef4444;
+        }
+
+        .result-message.crystal-win {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(147, 51, 234, 0.2));
+            border: 2px solid #a855f7;
+            color: #a855f7;
+            font-size: 32px;
+            animation: crystalWin 2s ease infinite;
+        }
+
+        @keyframes crystalWin {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Language Selector */
+        .lang-selector {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .lang-selector select {
+            background: transparent;
+            border: none;
+            color: #ffd700;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 3px solid #ffd700;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-title {
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #ffd700;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #4a4a6a;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #9333ea, #7c3aed);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(147, 51, 234, 0.5);
+        }
+
+        .modal-btn.cancel {
+            background: linear-gradient(135deg, #4a4a6a, #2d2d44);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #ffd700;
+        }
+
+        /* Stats */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 2px solid #4a4a6a;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .slot-grid {
+                gap: 10px;
+            }
+            
+            .card-icon {
+                font-size: 32px;
+            }
+            
+            .header {
+                padding: 10px 15px;
+            }
+            
+            .logo {
+                font-size: 20px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Sound Toggle */
+        .sound-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 2px solid #ffd700;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+
+        .sound-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        /* Volume Control */
+        .volume-control {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            z-index: 100;
+        }
+
+        .volume-control.show {
+            display: block;
+        }
+
+        .volume-slider {
+            width: 150px;
+            margin: 5px 0;
+        }
+    </style>
 </head>
 <body>
-  <!-- LOGIN -->
-  <div id="loginScreen" class="screen active">
-    <div class="login-container">
-      <div class="logo">
-        <div class="crystal-icon">◈</div>
-        <h1 class="cinzel">SOULHASH</h1>
-        <p class="subtitle">ARENA</p>
-      </div>
-      <div class="wallet-section">
-        <p id="walletText">Conecte sua wallet Phantom para entrar no universo SoulHash</p>
-        <button id="connectWalletBtn" class="btn-primary">
-          <span class="phantom-icon">👻</span>
-          <span id="connectText">Conectar Phantom</span>
-        </button>
-        <div id="statusMsg"></div>
-      </div>
-      <div class="language-selector">
-        <span>🌎</span>
-        <select id="languageSelect">
-          <option value="pt">Português</option>
-          <option value="en">English</option>
-          <option value="es">Español</option>
-          <option value="ja">日本語</option>
-          <option value="zh">中文</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- GAME -->
-  <div id="gameScreen" class="screen">
-    <header class="game-header">
-      <div class="header-left">
-        <div class="user-info">
-          <div class="soulhash-display"><span class="label">SOULHASH</span><span id="userSoulhash" class="hash">---</span></div>
-          <div class="level-display"><span id="levelLabel">Nível</span> <span id="userLevel">1</span></div>
-        </div>
-      </div>
-      <div class="header-center">
-        <h1 class="game-title cinzel">SOULHASH ARENA</h1>
-        <p class="game-subtitle" id="cardSystem">SISTEMA DE CARTAS - SLOT 3x3</p>
-      </div>
-      <div class="header-right">
-        <div class="currency-display">
-          <div class="hash-balance"><span>💎</span><span id="hashBalance">0</span></div>
-          <div class="usd-balance"><span>$</span><span id="usdBalance">0.00</span></div>
-        </div>
-        <button id="menuBtn" class="menu-btn">☰</button>
-      </div>
-    </header>
-
-    <div id="dropdownMenu" class="dropdown-menu">
-      <div class="menu-item" id="infoBtn"><span>ℹ️</span><span id="infoText">Info</span></div>
-      <div class="menu-item" id="volumeBtn"><span>🔊</span><span id="soundText">Som</span></div>
-      <div class="menu-item" id="withdrawBtn"><span>💰</span><span id="withdrawText">Withdraw</span></div>
-      <div class="menu-item" id="logoutBtn"><span>🚪</span><span id="logoutText">Sair</span></div>
-    </div>
-
-    <main class="game-main">
-      <aside class="sidebar left-sidebar">
-        <div class="elements-panel">
-          <h3 id="elementsTitle">ELEMENTOS</h3>
-          <div class="element-item"><span class="element-icon luz">☀️</span><div><strong>LUZ</strong><small id="lightDesc">Cura, Proteção</small></div></div>
-          <div class="element-item"><span class="element-icon sombra">🌑</span><div><strong>SOMBRA</strong><small id="shadowDesc">Dano, Crítico</small></div></div>
-          <div class="element-item"><span class="element-icon caos">🔥</span><div><strong>CAOS</strong><small id="chaosDesc">Área, Aleatório</small></div></div>
-          <div class="element-item"><span class="element-icon empatia">💚</span><div><strong>EMPATIA</strong><small id="empathyDesc">Cura, Escudo</small></div></div>
-          <div class="element-item"><span class="element-icon equilibrio">⚖️</span><div><strong>EQUILÍBRIO</strong><small id="balanceDesc">Defesa, Estabilidade</small></div></div>
-        </div>
-        <div class="combinations-panel">
-          <h3 id="combinationsTitle">COMBINAÇÕES</h3>
-          <div class="combo-item"><span class="combo-icon">3️⃣</span><div><strong id="threeInRow">3 IGUAIS</strong><small id="strongEffect">+20 Hash</small></div></div>
-          <div class="combo-item special"><span class="combo-icon">💎</span><div><strong id="crystalCenter">CRISTAL CENTRO</strong><small id="crystalBonus">+500 Hash + $20</small></div></div>
-        </div>
-      </aside>
-
-      <section class="game-board">
-        <div class="energy-bar">
-          <div class="energy-info"><span id="energyLabel">ENERGIA</span><span id="energyText">100/100</span></div>
-          <div class="energy-progress"><div id="energyFill" class="energy-fill" style="width:100%"></div></div>
-          <div class="energy-regen"><small id="regenRate">+1/min</small></div>
-        </div>
-        <div class="cards-grid" id="cardsGrid">
-          <div class="card-slot" data-index="0"></div><div class="card-slot" data-index="1"></div><div class="card-slot" data-index="2"></div>
-          <div class="card-slot" data-index="3"></div><div class="card-slot" data-index="4"></div><div class="card-slot" data-index="5"></div>
-          <div class="card-slot" data-index="6"></div><div class="card-slot" data-index="7"></div><div class="card-slot" data-index="8"></div>
-        </div>
-        <div class="spin-section">
-          <button id="spinBtn" class="spin-btn">
-            <span class="spin-text" id="spinText">GIRAR</span>
-            <span class="spin-cost">-10 <span id="energyCost">energia</span></span>
-          </button>
-          <div class="spin-info"><span id="lastMessage" class="message" id="readyMsg">Pronto para jogar!</span></div>
-        </div>
-      </section>
-
-      <aside class="sidebar right-sidebar">
-        <div class="last-result-panel">
-          <h3 id="lastResultTitle">ÚLTIMO RESULTADO</h3>
-          <div class="mini-grid" id="miniGrid"></div>
-        </div>
-        <div class="reward-panel">
-          <h3 id="rewardTitle">RECOMPENSA</h3>
-          <div class="reward-display">
-            <div class="reward-icon">💎</div>
-            <div class="reward-amount" id="rewardAmount">0</div>
-            <div class="reward-type" id="hashLabel">Hash</div>
-          </div>
-        </div>
-        <div class="dimension-panel">
-          <h3 id="dimensionTitle">DIMENSÃO ATUAL</h3>
-          <div class="dimension-info">
-            <strong>DIMENSÃO I - ORIGEM</strong>
-            <div class="dimension-progress">
-              <div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div>
-              <span>750 / 1.500</span>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">⚡ SOULHASH ARENA</div>
+        <div class="header-right">
+            <div class="balance-display" id="balanceDisplay" style="display: none;">
+                <div class="balance-icon">S</div>
+                <div>
+                    <div style="font-size: 12px; color: #888;" data-i18n="balance">Saldo</div>
+                    <div style="font-weight: bold;" id="balanceValue">0</div>
+                </div>
             </div>
-          </div>
-          <button class="btn-secondary" id="viewProgress">VER PROGRESSO</button>
+            <button class="menu-btn" onclick="toggleMenu()">☰</button>
         </div>
-      </aside>
-    </main>
-  </div>
-
-  <!-- MODALS -->
-  <div id="infoModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header"><h2 id="infoModalTitle">Informações</h2><button class="modal-close">&times;</button></div>
-      <div class="modal-body">
-        <div class="info-item"><strong id="totalHashLabel">Total Hash:</strong><span id="infoTotalHash">0</span></div>
-        <div class="info-item"><strong id="totalUsdLabel">Saldo USD:</strong><span id="infoTotalUsd">$0.00</span></div>
-        <div class="info-item"><strong id="spinsLabel">Jogadas:</strong><span id="infoSpins">0</span></div>
-        <div class="info-item"><strong id="winsLabel">Vitórias:</strong><span id="infoWins">0</span></div>
-        <div class="info-item"><strong id="crystalsLabel">Cristais:</strong><span id="infoCrystals">0</span></div>
-      </div>
     </div>
-  </div>
-  <div id="withdrawModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header"><h2 id="withdrawModalTitle">Retirar Hash</h2><button class="modal-close">&times;</button></div>
-      <div class="modal-body">
-        <div class="withdraw-form">
-          <label id="amountLabel">Quantidade:</label>
-          <input type="number" id="withdrawAmount" min="50" placeholder="Mínimo: 50">
-          <label id="walletAddrLabel">Endereço da Wallet:</label>
-          <input type="text" id="withdrawAddress" placeholder="Solana wallet address">
-          <button id="confirmWithdrawBtn" class="btn-primary" id="confirmText">Confirmar</button>
+
+    <!-- Menu Dropdown -->
+    <div class="menu-dropdown" id="menuDropdown">
+        <div class="menu-item" onclick="showHashInfo()">
+            <span>🔐</span>
+            <span data-i18n="hashInfo">Info do Hash</span>
         </div>
-      </div>
+        <div class="menu-item" onclick="toggleSound()">
+            <span id="soundIcon">🔊</span>
+            <span data-i18n="sound">Som</span>
+        </div>
+        <div class="menu-item" onclick="showWithdraw()">
+            <span>💰</span>
+            <span data-i18n="withdraw">Retirar</span>
+        </div>
+        <div class="menu-item" onclick="disconnectWallet()">
+            <span>🚪</span>
+            <span data-i18n="disconnect">Desconectar</span>
+        </div>
     </div>
-  </div>
 
-  <script>
-    // ═══════════════════════════════════════════════════════
-    // CONFIGURAÇÃO
-    // ═══════════════════════════════════════════════════════
-    const API_URL = 'https://soulhash-api.onrender.com';
-    let sessionToken = null, userData = null, soundEnabled = true, currentLang = 'pt';
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Connect Section -->
+        <div class="connect-section" id="connectSection">
+            <h1 style="margin-bottom: 20px; font-size: 42px;" data-i18n="welcome">Bem-vindo ao SoulHash Arena</h1>
+            <p style="margin-bottom: 40px; color: #888; font-size: 18px;" data-i18n="connectWallet">Conecte sua wallet Phantom para começar</p>
+            <button class="connect-btn" onclick="connectWallet()">
+                <span data-i18n="connectPhantom">Conectar Phantom Wallet</span>
+            </button>
+        </div>
 
-    // ═══════════════════════════════════════════════════════
-    // i18n - TRADUÇÃO COMPLETA
-    // ═══════════════════════════════════════════════════════
-    const i18n = {
-      pt: {
-        walletText: "Conecte sua wallet Phantom para entrar no universo SoulHash",
-        connectText: "Conectar Phantom",
-        levelLabel: "Nível",
-        cardSystem: "SISTEMA DE CARTAS - SLOT 3x3",
-        infoText: "Info",
-        soundText: "Som",
-        withdrawText: "Withdraw",
-        logoutText: "Sair",
-        elementsTitle: "ELEMENTOS",
-        lightDesc: "Cura, Proteção",
-        shadowDesc: "Dano, Crítico",
-        chaosDesc: "Área, Aleatório",
-        empathyDesc: "Cura, Escudo",
-        balanceDesc: "Defesa, Estabilidade",
-        combinationsTitle: "COMBINAÇÕES",
-        threeInRow: "3 IGUAIS",
-        strongEffect: "+20 Hash",
-        crystalCenter: "CRISTAL CENTRO",
-        crystalBonus: "+500 Hash + $20",
-        energyLabel: "ENERGIA",
-        regenRate: "+1/min",
-        spinText: "GIRAR",
-        energyCost: "energia",
-        readyMsg: "Pronto para jogar!",
-        lastResultTitle: "ÚLTIMO RESULTADO",
-        rewardTitle: "RECOMPENSA",
-        hashLabel: "Hash",
-        dimensionTitle: "DIMENSÃO ATUAL",
-        viewProgress: "VER PROGRESSO",
-        infoModalTitle: "Informações",
-        totalHashLabel: "Total Hash:",
-        totalUsdLabel: "Saldo USD:",
-        spinsLabel: "Jogadas:",
-        winsLabel: "Vitórias:",
-        crystalsLabel: "Cristais:",
-        withdrawModalTitle: "Retirar Hash",
-        amountLabel: "Quantidade:",
-        walletAddrLabel: "Endereço da Wallet:",
-        confirmText: "Confirmar",
-        insufficientEnergy: "⚠️ Energia insuficiente! Aguarde recarga.",
-        crystalWin: "🎉 CRISTAL NO CENTRO! +500 Hash + $20!",
-        win: "✅ Vitória!",
-        lose: "❌ Derrota",
-        connecting: "Conectando...",
-        connected: "✅ Conectado com sucesso!",
-        error: "❌ Erro",
-        installPhantom: "📥 Instale a Phantom Wallet para continuar",
-        noPhantom: "Phantom não detectada. Clique para instalar.",
-        signing: "Assinando mensagem..."
-      },
-      en: {
-        walletText: "Connect your Phantom wallet to enter the SoulHash universe",
-        connectText: "Connect Phantom",
-        levelLabel: "Level",
-        cardSystem: "CARD SYSTEM - 3x3 SLOT",
-        infoText: "Info",
-        soundText: "Sound",
-        withdrawText: "Withdraw",
-        logoutText: "Logout",
-        elementsTitle: "ELEMENTS",
-        lightDesc: "Healing, Protection",
-        shadowDesc: "Damage, Critical",
-        chaosDesc: "Area, Random",
-        empathyDesc: "Healing, Shield",
-        balanceDesc: "Defense, Stability",
-        combinationsTitle: "COMBINATIONS",
-        threeInRow: "3 MATCH",
-        strongEffect: "+20 Hash",
-        crystalCenter: "CRYSTAL CENTER",
-        crystalBonus: "+500 Hash + $20",
-        energyLabel: "ENERGY",
-        regenRate: "+1/min",
-        spinText: "SPIN",
-        energyCost: "energy",
-        readyMsg: "Ready to play!",
-        lastResultTitle: "LAST RESULT",
-        rewardTitle: "REWARD",
-        hashLabel: "Hash",
-        dimensionTitle: "CURRENT DIMENSION",
-        viewProgress: "VIEW PROGRESS",
-        infoModalTitle: "Information",
-        totalHashLabel: "Total Hash:",
-        totalUsdLabel: "USD Balance:",
-        spinsLabel: "Spins:",
-        winsLabel: "Wins:",
-        crystalsLabel: "Crystals:",
-        withdrawModalTitle: "Withdraw Hash",
-        amountLabel: "Amount:",
-        walletAddrLabel: "Wallet Address:",
-        confirmText: "Confirm",
-        insufficientEnergy: "⚠️ Insufficient energy! Wait for recharge.",
-        crystalWin: "🎉 CRYSTAL IN CENTER! +500 Hash + $20!",
-        win: "✅ Win!",
-        lose: "❌ Lose",
-        connecting: "Connecting...",
-        connected: "✅ Connected successfully!",
-        error: "❌ Error",
-        installPhantom: "📥 Install Phantom Wallet to continue",
-        noPhantom: "Phantom not detected. Click to install.",
-        signing: "Signing message..."
-      },
-      es: {
-        walletText: "Conecta tu wallet Phantom para entrar al universo SoulHash",
-        connectText: "Conectar Phantom",
-        levelLabel: "Nivel",
-        cardSystem: "SISTEMA DE CARTAS - SLOT 3x3",
-        infoText: "Info",
-        soundText: "Sonido",
-        withdrawText: "Retirar",
-        logoutText: "Salir",
-        elementsTitle: "ELEMENTOS",
-        lightDesc: "Curación, Protección",
-        shadowDesc: "Daño, Crítico",
-        chaosDesc: "Área, Aleatorio",
-        empathyDesc: "Curación, Escudo",
-        balanceDesc: "Defensa, Estabilidad",
-        combinationsTitle: "COMBINACIONES",
-        threeInRow: "3 IGUALES",
-        strongEffect: "+20 Hash",
-        crystalCenter: "CRISTAL CENTRO",
-        crystalBonus: "+500 Hash + $20",
-        energyLabel: "ENERGÍA",
-        regenRate: "+1/min",
-        spinText: "GIRAR",
-        energyCost: "energía",
-        readyMsg: "¡Listo para jugar!",
-        lastResultTitle: "ÚLTIMO RESULTADO",
-        rewardTitle: "RECOMPENSA",
-        hashLabel: "Hash",
-        dimensionTitle: "DIMENSIÓN ACTUAL",
-        viewProgress: "VER PROGRESO",
-        infoModalTitle: "Información",
-        totalHashLabel: "Total Hash:",
-        totalUsdLabel: "Saldo USD:",
-        spinsLabel: "Jugadas:",
-        winsLabel: "Victorias:",
-        crystalsLabel: "Cristales:",
-        withdrawModalTitle: "Retirar Hash",
-        amountLabel: "Cantidad:",
-        walletAddrLabel: "Dirección:",
-        confirmText: "Confirmar",
-        insufficientEnergy: "⚠️ ¡Energía insuficiente! Espera recarga.",
-        crystalWin: "🎉 ¡CRISTAL EN CENTRO! +500 Hash + $20!",
-        win: "✅ ¡Victoria!",
-        lose: "❌ Derrota",
-        connecting: "Conectando...",
-        connected: "✅ ¡Conectado con éxito!",
-        error: "❌ Error",
-        installPhantom: "📥 Instala Phantom Wallet para continuar",
-        noPhantom: "Phantom no detectada. Click para instalar.",
-        signing: "Firmando mensaje..."
-      },
-      ja: {
-        walletText: "Phantomウォレットを接続してSoulHashユニバースに参加",
-        connectText: "Phantomを接続",
-        levelLabel: "レベル",
-        cardSystem: "カードシステム - 3x3",
-        infoText: "情報",
-        soundText: "音",
-        withdrawText: "出金",
-        logoutText: "ログアウト",
-        elementsTitle: "エレメント",
-        lightDesc: "回復、保護",
-        shadowDesc: "ダメージ、クリティカル",
-        chaosDesc: "範囲、ランダム",
-        empathyDesc: "回復、シールド",
-        balanceDesc: "防御、安定",
-        combinationsTitle: "コンボ",
-        threeInRow: "3つ揃い",
-        strongEffect: "+20 Hash",
-        crystalCenter: "中央クリスタル",
-        crystalBonus: "+500 Hash + $20",
-        energyLabel: "エネルギー",
-        regenRate: "+1/分",
-        spinText: "スピン",
-        energyCost: "エネルギー",
-        readyMsg: "プレイ準備完了！",
-        lastResultTitle: "前回の結果",
-        rewardTitle: "報酬",
-        hashLabel: "Hash",
-        dimensionTitle: "現在の次元",
-        viewProgress: "進行状況を表示",
-        infoModalTitle: "情報",
-        totalHashLabel: "合計Hash:",
-        totalUsdLabel: "USD残高:",
-        spinsLabel: "スピン数:",
-        winsLabel: "勝利数:",
-        crystalsLabel: "クリスタル:",
-        withdrawModalTitle: "Hashを出金",
-        amountLabel: "数量:",
-        walletAddrLabel: "アドレス:",
-        confirmText: "確認",
-        insufficientEnergy: "⚠️ エネルギー不足！回復を待機。",
-        crystalWin: "🎉 中央にクリスタル！+500 Hash + $20！",
-        win: "✅ 勝利！",
-        lose: "❌ 敗北",
-        connecting: "接続中...",
-        connected: "✅ 接続成功！",
-        error: "❌ エラー",
-        installPhantom: "📥 Phantomをインストール",
-        noPhantom: "Phantom未検出。クリックでインストール。",
-        signing: "メッセージ署名中..."
-      },
-      zh: {
-        walletText: "连接您的Phantom钱包进入SoulHash宇宙",
-        connectText: "连接Phantom",
-        levelLabel: "等级",
-        cardSystem: "卡牌系统 - 3x3插槽",
-        infoText: "信息",
-        soundText: "声音",
-        withdrawText: "提现",
-        logoutText: "退出",
-        elementsTitle: "元素",
-        lightDesc: "治疗、保护",
-        shadowDesc: "伤害、暴击",
-        chaosDesc: "范围、随机",
-        empathyDesc: "治疗、护盾",
-        balanceDesc: "防御、稳定",
-        combinationsTitle: "组合",
-        threeInRow: "3个连成",
-        strongEffect: "+20 Hash",
-        crystalCenter: "中心水晶",
-        crystalBonus: "+500 Hash + $20",
-        energyLabel: "能量",
-        regenRate: "+1/分钟",
-        spinText: "旋转",
-        energyCost: "能量",
-        readyMsg: "准备开始游戏！",
-        lastResultTitle: "上次结果",
-        rewardTitle: "奖励",
-        hashLabel: "Hash",
-        dimensionTitle: "当前维度",
-        viewProgress: "查看进度",
-        infoModalTitle: "信息",
-        totalHashLabel: "总Hash:",
-        totalUsdLabel: "USD余额:",
-        spinsLabel: "旋转次数:",
-        winsLabel: "胜利次数:",
-        crystalsLabel: "水晶:",
-        withdrawModalTitle: "提取Hash",
-        amountLabel: "数量:",
-        walletAddrLabel: "钱包地址:",
-        confirmText: "确认",
-        insufficientEnergy: "⚠️ 能量不足！等待恢复。",
-        crystalWin: "🎉 中心水晶！+500 Hash + $20！",
-        win: "✅ 胜利！",
-        lose: "❌ 失败",
-        connecting: "连接中...",
-        connected: "✅ 连接成功！",
-        error: "❌ 错误",
-        installPhantom: "📥 安装Phantom钱包",
-        noPhantom: "未检测到Phantom。点击安装。",
-        signing: "签署消息中..."
-      }
-    };
+        <!-- Game Board -->
+        <div class="game-board" id="gameBoard">
+            <!-- Energy Bar -->
+            <div class="energy-container">
+                <div class="energy-label">
+                    <span data-i18n="energy">Energia</span>
+                    <span><span id="energyValue">100</span> / <span id="maxEnergyValue">100</span></span>
+                </div>
+                <div class="energy-bar">
+                    <div class="energy-fill" id="energyFill" style="width: 100%;">
+                        <span id="energyText">100%</span>
+                    </div>
+                </div>
+            </div>
 
-    // Função de tradução - CORRIGIDA
-    function t(key) {
-      const lang = i18n[currentLang];
-      return lang && lang[key] ? lang[key] : key;
-    }
+            <!-- Result Message -->
+            <div class="result-message" id="resultMessage"></div>
 
-    // Atualizar todos os elementos - CORRIGIDO
-    function updateTranslations() {
-      // Mapeamento de IDs para chaves de tradução
-      const translations = {
-        'walletText': 'walletText',
-        'connectText': 'connectText',
-        'levelLabel': 'levelLabel',
-        'cardSystem': 'cardSystem',
-        'infoText': 'infoText',
-        'soundText': 'soundText',
-        'withdrawText': 'withdrawText',
-        'logoutText': 'logoutText',
-        'elementsTitle': 'elementsTitle',
-        'lightDesc': 'lightDesc',
-        'shadowDesc': 'shadowDesc',
-        'chaosDesc': 'chaosDesc',
-        'empathyDesc': 'empathyDesc',
-        'balanceDesc': 'balanceDesc',
-        'combinationsTitle': 'combinationsTitle',
-        'threeInRow': 'threeInRow',
-        'strongEffect': 'strongEffect',
-        'crystalCenter': 'crystalCenter',
-        'crystalBonus': 'crystalBonus',
-        'energyLabel': 'energyLabel',
-        'regenRate': 'regenRate',
-        'spinText': 'spinText',
-        'energyCost': 'energyCost',
-        'readyMsg': 'readyMsg',
-        'lastResultTitle': 'lastResultTitle',
-        'rewardTitle': 'rewardTitle',
-        'hashLabel': 'hashLabel',
-        'dimensionTitle': 'dimensionTitle',
-        'viewProgress': 'viewProgress',
-        'infoModalTitle': 'infoModalTitle',
-        'totalHashLabel': 'totalHashLabel',
-        'totalUsdLabel': 'totalUsdLabel',
-        'spinsLabel': 'spinsLabel',
-        'winsLabel': 'winsLabel',
-        'crystalsLabel': 'crystalsLabel',
-        'withdrawModalTitle': 'withdrawModalTitle',
-        'amountLabel': 'amountLabel',
-        'walletAddrLabel': 'walletAddrLabel',
-        'confirmText': 'confirmText'
-      };
+            <!-- Slot Grid -->
+            <div class="slot-container">
+                <div class="slot-grid" id="slotGrid">
+                    <!-- Cards will be generated here -->
+                </div>
 
-      // Atualiza cada elemento pelo ID
-      for (const [id, key] of Object.entries(translations)) {
-        const el = document.getElementById(id);
-        if (el) {
-          el.textContent = t(key);
-        }
-      }
+                <!-- Spin Button -->
+                <div class="spin-container">
+                    <button class="spin-btn" id="spinBtn" onclick="spin()">
+                        <span data-i18n="spin">GIRAR</span>
+                    </button>
+                    <div class="spin-cost" data-i18n="spinCost">Custo: 10 energia</div>
+                </div>
+            </div>
 
-      // Atualiza placeholders
-      const withdrawAmt = document.getElementById('withdrawAmount');
-      if (withdrawAmt) withdrawAmt.placeholder = currentLang === 'pt' ? 'Mínimo: 50' : 
-                                                   currentLang === 'en' ? 'Minimum: 50' :
-                                                   currentLang === 'es' ? 'Mínimo: 50' :
-                                                   currentLang === 'ja' ? '最小：50' : '最少：50';
-      
-      const withdrawAddr = document.getElementById('withdrawAddress');
-      if (withdrawAddr) withdrawAddr.placeholder = currentLang === 'pt' ? 'Endereço da wallet Solana' : 
-                                                     currentLang === 'en' ? 'Solana wallet address' :
-                                                     currentLang === 'es' ? 'Dirección de wallet Solana' :
-                                                     currentLang === 'ja' ? 'Solanaウォレットアドレス' : 'Solana钱包地址';
-    }
+            <!-- Stats -->
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-value" id="statSpins">0</div>
+                    <div class="stat-label" data-i18n="spins">Giros</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="statWins">0</div>
+                    <div class="stat-label" data-i18n="wins">Vitórias</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="statLevel">1</div>
+                    <div class="stat-label" data-i18n="level">Nível</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    // Mudar idioma
-    function setLanguage(lang) {
-      currentLang = lang;
-      localStorage.setItem('soulhash_lang', lang);
-      updateTranslations();
-      console.log('Idioma alterado para:', lang);
-    }
+    <!-- Language Selector -->
+    <div class="lang-selector">
+        <select id="langSelect" onchange="changeLanguage(this.value)">
+            <option value="pt">🇵🇹 Português</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="zh">🇨 中文</option>
+        </select>
+    </div>
 
-    // ═══════════════════════════════════════════════════════
-    // bs58 encoding
-    // ═══════════════════════════════════════════════════════
-    const bs58 = {
-      encode: (buffer) => {
-        const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-        let output = '';
-        const bytes = new Uint8Array(buffer);
-        let i, j, carry;
+    <!-- Sound Toggle -->
+    <div class="sound-toggle" id="soundToggle" onclick="toggleVolumeControl()">
+        🔊
+    </div>
+
+    <!-- Volume Control -->
+    <div class="volume-control" id="volumeControl">
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" onchange="setVolume(this.value)">
+        <div style="text-align: center; font-size: 12px; margin-top: 5px;">Volume</div>
+    </div>
+
+    <!-- Hash Info Modal -->
+    <div class="modal" id="hashModal">
+        <div class="modal-content" style="position: relative;">
+            <span class="close-modal" onclick="closeModal('hashModal')">&times;</span>
+            <h2 class="modal-title" data-i18n="hashInfo">Info do Hash</h2>
+            <div style="margin: 20px 0;">
+                <div style="color: #888; margin-bottom: 5px;" data-i18n="yourHash">Seu Hash:</div>
+                <div class="hash-info" id="modalHashValue">-</div>
+            </div>
+            <div style="margin: 20px 0;">
+                <div style="color: #888; margin-bottom: 5px;" data-i18n="wallet">Wallet:</div>
+                <div class="hash-info" id="modalWalletValue">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal" id="withdrawModal">
+        <div class="modal-content" style="position: relative;">
+            <span class="close-modal" onclick="closeModal('withdrawModal')">&times;</span>
+            <h2 class="modal-title" data-i18n="withdraw">Retirar</h2>
+            <div style="margin: 20px 0;">
+                <div style="color: #888; margin-bottom: 5px;" data-i18n="availableBalance">Saldo disponível:</div>
+                <div style="font-size: 24px; color: #ffd700; font-weight: bold;">
+                    <span id="withdrawBalance">0</span> Hash
+                </div>
+            </div>
+            <input type="number" class="modal-input" id="withdrawAmount" placeholder="Quantidade" min="20">
+            <button class="modal-btn" onclick="withdraw()" data-i18n="confirmWithdraw">Confirmar Retirada</button>
+            <button class="modal-btn cancel" onclick="closeModal('withdrawModal')" data-i18n="cancel">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIGURAÇÃO ====================
+        const API_URL = 'https://soulhash-api.onrender.com';
         
-        for (i = 0; i < bytes.length; i++) {
-          for (carry = bytes[i], j = 0; j < output.length || carry !== 0; j++) {
-            carry = carry + 256 * (j < output.length ? ALPHABET.indexOf(output[j]) : 0);
-            output = output.slice(0, j) + ALPHABET[carry % 58] + output.slice(j + 1);
-            carry = Math.floor(carry / 58);
-          }
+        // ==================== ESTADO ====================
+        let state = {
+            wallet: null,
+            soulhash: null,
+            sessionToken: null,
+            balance: 0,
+            energy: 10,
+            maxEnergy: 10,
+            soundEnabled: true,
+            volume: 0.5,
+            language: 'pt',
+            stats: { spins: 0, wins: 0, xp: 0 },
+            isSpinning: false,
+            backgroundMusic: null
+        };
+
+        // ==================== TRADUÇÕES ====================
+        const translations = {
+            pt: {
+                welcome: "Bem-vindo ao SoulHash Arena",
+                connectWallet: "Conecte sua wallet Phantom para começar",
+                connectPhantom: "Conectar Phantom Wallet",
+                balance: "Saldo",
+                energy: "Energia",
+                spin: "GIRAR",
+                spinCost: "Custo: 10 energia",
+                spins: "Giros",
+                wins: "Vitórias",
+                level: "Nível",
+                hashInfo: "Info do Hash",
+                sound: "Som",
+                withdraw: "Retirar",
+                disconnect: "Desconectar",
+                yourHash: "Seu Hash:",
+                wallet: "Wallet:",
+                availableBalance: "Saldo disponível:",
+                confirmWithdraw: "Confirmar Retirada",
+                cancel: "Cancelar",
+                win: "🎉 VOCÊ GANHOU!",
+                lose: "😔 Não foi dessa vez...",
+                crystalWin: "💎 CRISTAL! +500 HASH!",
+                noEnergy: "Sem energia! Aguarde a recarga.",
+                connecting: "Conectando..."
+            },
+            en: {
+                welcome: "Welcome to SoulHash Arena",
+                connectWallet: "Connect your Phantom wallet to start",
+                connectPhantom: "Connect Phantom Wallet",
+                balance: "Balance",
+                energy: "Energy",
+                spin: "SPIN",
+                spinCost: "Cost: 10 energy",
+                spins: "Spins",
+                wins: "Wins",
+                level: "Level",
+                hashInfo: "Hash Info",
+                sound: "Sound",
+                withdraw: "Withdraw",
+                disconnect: "Disconnect",
+                yourHash: "Your Hash:",
+                wallet: "Wallet:",
+                availableBalance: "Available balance:",
+                confirmWithdraw: "Confirm Withdraw",
+                cancel: "Cancel",
+                win: "🎉 YOU WON!",
+                lose: "😔 Not this time...",
+                crystalWin: "💎 CRYSTAL! +500 HASH!",
+                noEnergy: "No energy! Wait for recharge.",
+                connecting: "Connecting..."
+            },
+            es: {
+                welcome: "Bienvenido a SoulHash Arena",
+                connectWallet: "Conecta tu wallet Phantom para comenzar",
+                connectPhantom: "Conectar Phantom Wallet",
+                balance: "Saldo",
+                energy: "Energía",
+                spin: "GIRAR",
+                spinCost: "Costo: 10 energía",
+                spins: "Giros",
+                wins: "Victorias",
+                level: "Nivel",
+                hashInfo: "Info del Hash",
+                sound: "Sonido",
+                withdraw: "Retirar",
+                disconnect: "Desconectar",
+                yourHash: "Tu Hash:",
+                wallet: "Wallet:",
+                availableBalance: "Saldo disponible:",
+                confirmWithdraw: "Confirmar Retiro",
+                cancel: "Cancelar",
+                win: "🎉 ¡GANASTE!",
+                lose: "😔 No fue esta vez...",
+                crystalWin: "💎 ¡CRISTAL! +500 HASH!",
+                noEnergy: "¡Sin energía! Espera la recarga.",
+                connecting: "Conectando..."
+            },
+            ja: {
+                welcome: "SoulHash Arenaへようこそ",
+                connectWallet: "開始するにはPhantomウォレットを接続してください",
+                connectPhantom: "Phantomウォレットを接続",
+                balance: "残高",
+                energy: "エネルギー",
+                spin: "スピン",
+                spinCost: "コスト：10エネルギー",
+                spins: "スピン数",
+                wins: "勝利",
+                level: "レベル",
+                hashInfo: "ハッシュ情報",
+                sound: "サウンド",
+                withdraw: "出金",
+                disconnect: "切断",
+                yourHash: "あなたのハッシュ：",
+                wallet: "ウォレット：",
+                availableBalance: "利用可能残高：",
+                confirmWithdraw: "出金を確認",
+                cancel: "キャンセル",
+                win: "🎉 勝利！",
+                lose: "😔 今回はダメ...",
+                crystalWin: "💎 クリスタル！+500 HASH！",
+                noEnergy: "エネルギーなし！充電を待ってください。",
+                connecting: "接続中..."
+            },
+            zh: {
+                welcome: "欢迎来到SoulHash竞技场",
+                connectWallet: "连接您的Phantom钱包开始",
+                connectPhantom: "连接Phantom钱包",
+                balance: "余额",
+                energy: "能量",
+                spin: "旋转",
+                spinCost: "成本：10能量",
+                spins: "旋转次数",
+                wins: "胜利",
+                level: "等级",
+                hashInfo: "哈希信息",
+                sound: "声音",
+                withdraw: "提现",
+                disconnect: "断开连接",
+                yourHash: "您的哈希：",
+                wallet: "钱包：",
+                availableBalance: "可用余额：",
+                confirmWithdraw: "确认提现",
+                cancel: "取消",
+                win: "🎉 你赢了！",
+                lose: "😔 这次不行...",
+                crystalWin: "💎 水晶！+500 HASH！",
+                noEnergy: "没有能量！等待充电。",
+                connecting: "连接中..."
+            }
+        };
+
+        // ==================== CARD CONFIG ====================
+        const cardTypes = {
+            light: { icon: '☀️', label: { pt: 'Luz', en: 'Light', es: 'Luz', ja: '光', zh: '光' } },
+            shadow: { icon: '👤', label: { pt: 'Sombra', en: 'Shadow', es: 'Sombra', ja: '影', zh: '影' } },
+            chaos: { icon: '💥', label: { pt: 'Caos', en: 'Chaos', es: 'Caos', ja: '混沌', zh: '混沌' } },
+            empathy: { icon: '💚', label: { pt: 'Empatia', en: 'Empathy', es: 'Empatía', ja: '共感', zh: '共情' } },
+            balance: { icon: '⚖️', label: { pt: 'Equilíbrio', en: 'Balance', es: 'Equilibrio', ja: '均衡', zh: '平衡' } },
+            crystal: { icon: '💎', label: { pt: 'Cristal', en: 'Crystal', es: 'Cristal', ja: 'クリスタル', zh: '水晶' } }
+        };
+
+        // ==================== SISTEMA DE ÁUDIO AVANÇADO ====================
+        class AudioManager {
+            constructor() {
+                this.ctx = null;
+                this.volume = 0.5;
+                this.backgroundMusic = null;
+                this.isPlaying = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            // Música de fundo suspense (drone ambiental)
+            playBackgroundMusic() {
+                if (!this.ctx || this.isPlaying) return;
+                this.isPlaying = true;
+
+                const oscillator = this.ctx.createOscillator();
+                const gainNode = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(55, this.ctx.currentTime); // A1 nota baixa
+                
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, this.ctx.currentTime);
+
+                gainNode.gain.setValueAtTime(this.volume * 0.1, this.ctx.currentTime);
+                
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.ctx.destination);
+                
+                oscillator.start();
+                this.backgroundMusic = oscillator;
+
+                // Modulação para criar atmosfera
+                setInterval(() => {
+                    if (this.backgroundMusic && this.ctx) {
+                        oscillator.frequency.setValueAtTime(55 + Math.random() * 10, this.ctx.currentTime);
+                    }
+                }, 5000);
+            }
+
+            stopBackgroundMusic() {
+                if (this.backgroundMusic) {
+                    this.backgroundMusic.stop();
+                    this.backgroundMusic = null;
+                    this.isPlaying = false;
+                }
+            }
+
+            // Som de giro (slot machine)
+            playSpin() {
+                if (!this.ctx || !state.soundEnabled) return;
+                
+                const duration = 0.1;
+                const count = 10;
+                
+                for (let i = 0; i < count; i++) {
+                    setTimeout(() => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        
+                        osc.frequency.setValueAtTime(200 + Math.random() * 100, this.ctx.currentTime);
+                        gain.gain.setValueAtTime(this.volume * 0.1, this.ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                        
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        
+                        osc.start();
+                        osc.stop(this.ctx.currentTime + duration);
+                    }, i * 100);
+                }
+            }
+
+            // Som de vitória (moedas)
+            playWin() {
+                if (!this.ctx || !state.soundEnabled) return;
+                
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C major
+                
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                        gain.gain.setValueAtTime(this.volume * 0.3, this.ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                        
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        
+                        osc.start();
+                        osc.stop(this.ctx.currentTime + 0.3);
+                    }, i * 150);
+                });
+            }
+
+            // Som de derrota
+            playLose() {
+                if (!this.ctx || !state.soundEnabled) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.5);
+                
+                gain.gain.setValueAtTime(this.volume * 0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.5);
+            }
+
+            // Som de cristal (especial)
+            playCrystal() {
+                if (!this.ctx || !state.soundEnabled) return;
+                
+                const notes = [523.25, 783.99, 1046.50, 1567.98, 2093.00];
+                
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                        gain.gain.setValueAtTime(this.volume * 0.4, this.ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.8);
+                        
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        
+                        osc.start();
+                        osc.stop(this.ctx.currentTime + 0.8);
+                    }, i * 200);
+                });
+            }
+
+            setVolume(vol) {
+                this.volume = vol / 100;
+            }
         }
-        
-        for (i = 0; bytes[i] === 0 && i < bytes.length; i++) {
-          output = '1' + output;
+
+        const audioManager = new AudioManager();
+
+        // ==================== WALLET CONNECTION ====================
+        async function connectWallet() {
+            const t = translations[state.language];
+            
+            if (typeof window.solana === 'undefined') {
+                alert('Por favor, instale a Phantom wallet!');
+                return;
+            }
+
+            try {
+                // Inicializar áudio
+                audioManager.init();
+                
+                const response = await window.solana.connect();
+                const wallet = response.publicKey.toString();
+                
+                state.wallet = wallet;
+                
+                const challengeRes = await fetch(`${API_URL}/challenge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wallet })
+                });
+                
+                const challengeData = await challengeRes.json();
+                
+                const encodedMessage = new TextEncoder().encode(challengeData.message);
+                const signedMessage = await window.solana.signMessage(encodedMessage, 'utf8');
+                
+                const verifyRes = await fetch(`${API_URL}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet,
+                        signature: bs58.encode(signedMessage.signature)
+                    })
+                });
+                
+                const verifyData = await verifyRes.json();
+                
+                state.soulhash = verifyData.soulhash;
+                state.sessionToken = verifyData.sessionToken;
+                state.balance = verifyData.balance;
+                state.energy = verifyData.energy;
+                state.maxEnergy = verifyData.maxEnergy;
+                state.stats = verifyData.stats;
+                
+                updateUI();
+                document.getElementById('connectSection').style.display = 'none';
+                document.getElementById('gameBoard').classList.add('active');
+                document.getElementById('balanceDisplay').style.display = 'flex';
+                
+                // Iniciar música de fundo
+                setTimeout(() => {
+                    audioManager.playBackgroundMusic();
+                }, 1000);
+                
+                // Renderizar grid inicial
+                renderInitialGrid();
+                
+                if (verifyData.isNew) {
+                    showResult('🎁 Bônus de 100 Hash recebido!', 'win');
+                    audioManager.playWin();
+                }
+                
+            } catch (error) {
+                console.error('Erro na conexão:', error);
+                alert('Erro ao conectar wallet. Tente novamente.');
+            }
         }
-        
-        return output;
-      }
-    };
 
-    // ═══════════════════════════════════════════════════════
-    // Wallet Manager - CORRIGIDO
-    // ═══════════════════════════════════════════════════════
-    class WalletManager {
-      constructor() {
-        this.wallet = null;
-        this.publicKey = null;
-        this.connected = false;
-      }
-
-      async connect() {
-        // Verifica se Phantom está instalada
-        if (!window.solana || !window.solana.isPhantom) {
-          showStatus(t('noPhantom'), 'error');
-          setTimeout(() => {
-            window.open('https://phantom.app/download', '_blank');
-          }, 1500);
-          return null;
+        function disconnectWallet() {
+            if (window.solana) {
+                window.solana.disconnect();
+            }
+            audioManager.stopBackgroundMusic();
+            state = {
+                wallet: null,
+                soulhash: null,
+                sessionToken: null,
+                balance: 0,
+                energy: 10,
+                maxEnergy: 10,
+                soundEnabled: true,
+                volume: 0.5,
+                language: 'pt',
+                stats: { spins: 0, wins: 0, xp: 0 },
+                isSpinning: false,
+                backgroundMusic: null
+            };
+            document.getElementById('connectSection').style.display = 'block';
+            document.getElementById('gameBoard').classList.remove('active');
+            document.getElementById('balanceDisplay').style.display = 'none';
+            toggleMenu();
         }
 
-        try {
-          showStatus(t('connecting'), 'success');
-          const response = await window.solana.connect();
-          this.publicKey = response.publicKey.toString();
-          this.wallet = window.solana;
-          this.connected = true;
-          
-          // Event listeners
-          window.solana.on('connect', () => {
-            this.publicKey = window.solana.publicKey.toString();
-            this.connected = true;
-            console.log('Phantom conectada:', this.publicKey);
-          });
-          
-          window.solana.on('disconnect', () => {
-            this.publicKey = null;
-            this.connected = false;
-            console.log('Phantom desconectada');
-          });
-          
-          return this.publicKey;
-        } catch (err) {
-          console.error('Erro ao conectar Phantom:', err);
-          showStatus(t('error') + ': ' + err.message, 'error');
-          return null;
+        // ==================== ANIMAÇÃO DE GIRO ====================
+        function renderInitialGrid() {
+            const gridElement = document.getElementById('slotGrid');
+            gridElement.innerHTML = '';
+            
+            for (let i = 0; i < 9; i++) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('data-type', 'balance');
+                card.innerHTML = `
+                    <div class="card-icon">❓</div>
+                    <div class="card-label">?</div>
+                `;
+                gridElement.appendChild(card);
+            }
         }
-      }
 
-      async signMessage(message) {
-        if (!this.wallet) {
-          throw new Error('Wallet não conectada');
+        async function spin() {
+            if (state.isSpinning) return;
+            if (state.energy < 1) {
+                showResult(translations[state.language].noEnergy, 'lose');
+                audioManager.playLose();
+                return;
+            }
+
+            state.isSpinning = true;
+            const spinBtn = document.getElementById('spinBtn');
+            spinBtn.disabled = true;
+            spinBtn.classList.add('spinning');
+            
+            // Tocar som de giro
+            audioManager.playSpin();
+            
+            // Adicionar animação de giro nas cartas
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => card.classList.add('spinning'));
+            
+            try {
+                const response = await fetch(`${API_URL}/spin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-token': state.sessionToken
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // Aguardar animação
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Remover animação
+                cards.forEach(card => card.classList.remove('spinning'));
+                
+                // Atualizar estado
+                state.balance = data.balance;
+                state.energy = data.energy;
+                state.stats = data.stats;
+                
+                // Renderizar grid final
+                renderGrid(data.grid, data.winPositions, data.combo);
+                
+                // Mostrar resultado
+                if (data.isCrystal) {
+                    showResult(translations[state.language].crystalWin, 'crystal-win');
+                    audioManager.playCrystal();
+                } else if (data.isWin) {
+                    showResult(`${translations[state.language].win} +${data.reward} Hash`, 'win');
+                    audioManager.playWin();
+                } else {
+                    showResult(translations[state.language].lose, 'lose');
+                    audioManager.playLose();
+                }
+                
+                updateUI();
+                
+            } catch (error) {
+                console.error('Erro no spin:', error);
+                alert('Erro ao girar. Tente novamente.');
+                cards.forEach(card => card.classList.remove('spinning'));
+            } finally {
+                state.isSpinning = false;
+                spinBtn.disabled = false;
+                spinBtn.classList.remove('spinning');
+            }
         }
-        
-        try {
-          showStatus(t('signing'), 'success');
-          const encodedMessage = new TextEncoder().encode(message);
-          const signedMessage = await this.wallet.signMessage(encodedMessage, 'utf8');
-          return bs58.encode(signedMessage.signature);
-        } catch (err) {
-          console.error('Erro ao assinar:', err);
-          throw new Error('Assinatura cancelada ou falhou');
+
+        function renderGrid(grid, winPositions = [], combo) {
+            const gridElement = document.getElementById('slotGrid');
+            gridElement.innerHTML = '';
+            
+            grid.forEach((cardType, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.setAttribute('data-type', cardType);
+                
+                const isWinning = winPositions.includes(index);
+                if (isWinning) {
+                    card.classList.add('winning');
+                }
+                
+                if (cardType === 'crystal') {
+                    card.classList.add('crystal');
+                }
+                
+                const cardData = cardTypes[cardType];
+                const label = cardData.label[state.language] || cardData.label.en;
+                
+                card.innerHTML = `
+                    <div class="card-icon">${cardData.icon}</div>
+                    <div class="card-label">${label}</div>
+                `;
+                
+                gridElement.appendChild(card);
+            });
         }
-      }
 
-      disconnect() {
-        if (this.wallet) {
-          this.wallet.disconnect();
+        function showResult(message, type) {
+            const resultEl = document.getElementById('resultMessage');
+            resultEl.textContent = message;
+            resultEl.className = `result-message show ${type}`;
+            
+            setTimeout(() => {
+                resultEl.classList.remove('show');
+            }, 3000);
         }
-        this.publicKey = null;
-        this.connected = false;
-      }
-    }
 
-    const walletManager = new WalletManager();
-
-    // ═══════════════════════════════════════════════════════
-    // DOM Elements
-    // ═══════════════════════════════════════════════════════
-    const $ = id => document.getElementById(id);
-    const screens = { login: $('loginScreen'), game: $('gameScreen') };
-    const els = {
-      connect: $('connectWalletBtn'),
-      menu: $('menuBtn'),
-      dropdown: $('dropdownMenu'),
-      spin: $('spinBtn'),
-      grid: $('cardsGrid'),
-      energyFill: $('energyFill'),
-      energyText: $('energyText'),
-      hash: $('hashBalance'),
-      usd: $('usdBalance'),
-      soul: $('userSoulhash'),
-      lvl: $('userLevel'),
-      msg: $('lastMessage'),
-      reward: $('rewardAmount'),
-      mini: $('miniGrid'),
-      info: $('infoBtn'),
-      vol: $('volumeBtn'),
-      with: $('withdrawBtn'),
-      out: $('logoutBtn'),
-      infoModal: $('infoModal'),
-      withModal: $('withdrawModal'),
-      confirmW: $('confirmWithdrawBtn'),
-      statusMsg: $('statusMsg')
-    };
-
-    const cards = {
-      LUZ: { icon: '☀️', c: '#fbbf24' },
-      SOMBRA: { icon: '🌑', c: '#8b5cf6' },
-      CAOS: { icon: '🔥', c: '#ef4444' },
-      EMPATIA: { icon: '💚', c: '#10b981' },
-      EQUILIBRIO: { icon: '⚖️', c: '#3b82f6' },
-      CRISTAL: { icon: '💎', c: '#a855f7' }
-    };
-
-    // ═══════════════════════════════════════════════════════
-    // Init
-    // ═══════════════════════════════════════════════════════
-    document.addEventListener('DOMContentLoaded', () => {
-      // Carrega idioma salvo
-      const savedLang = localStorage.getItem('soulhash_lang') || 'pt';
-      $('languageSelect').value = savedLang;
-      setLanguage(savedLang);
-      
-      // Event listener do seletor de idioma
-      $('languageSelect').addEventListener('change', (e) => {
-        setLanguage(e.target.value);
-      });
-      
-      setupEvents();
-      checkSession();
-    });
-
-    function setupEvents() {
-      els.connect.onclick = handleConnect;
-      els.menu.onclick = () => els.dropdown.classList.toggle('active');
-      els.spin.onclick = handleSpin;
-      els.info.onclick = () => showModal('info');
-      els.vol.onclick = () => {
-        soundEnabled = !soundEnabled;
-        els.vol.innerHTML = soundEnabled ? '🔊' : '🔇';
-      };
-      els.with.onclick = () => showModal('withdraw');
-      els.out.onclick = logout;
-      
-      // Fechar modais
-      document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.onclick = (e) => e.target.closest('.modal').classList.remove('active');
-      });
-      
-      // Fechar menu ao clicar fora
-      document.onclick = (e) => {
-        if (!els.menu.contains(e.target) && !els.dropdown.contains(e.target)) {
-          els.dropdown.classList.remove('active');
+        function updateUI() {
+            document.getElementById('balanceValue').textContent = state.balance;
+            document.getElementById('energyValue').textContent = state.energy;
+            document.getElementById('maxEnergyValue').textContent = state.maxEnergy;
+            
+            const energyPercent = (state.energy / state.maxEnergy) * 100;
+            document.getElementById('energyFill').style.width = `${energyPercent}%`;
+            document.getElementById('energyText').textContent = `${Math.round(energyPercent)}%`;
+            
+            document.getElementById('statSpins').textContent = state.stats.spins || 0;
+            document.getElementById('statWins').textContent = state.stats.wins || 0;
+            document.getElementById('statLevel').textContent = Math.floor((state.stats.xp || 0) / 1000) + 1;
         }
-      };
-      
-      els.confirmW.onclick = handleWithdraw;
-    }
 
-    function showStatus(msg, type) {
-      if (els.statusMsg) {
-        els.statusMsg.textContent = msg;
-        els.statusMsg.className = 'status-msg ' + type;
-        setTimeout(() => {
-          els.statusMsg.textContent = '';
-          els.statusMsg.className = 'status-msg';
-        }, 5000);
-      }
-    }
-
-    async function checkSession() {
-      const tok = localStorage.getItem('soulhash_token');
-      if (tok) {
-        sessionToken = tok;
-        try {
-          await fetchUser();
-          showGame();
-          updateUI();
-        } catch (err) {
-          console.error('Sessão expirada:', err);
-          localStorage.removeItem('soulhash_token');
-          sessionToken = null;
+        // ==================== MENU & MODALS ====================
+        function toggleMenu() {
+            document.getElementById('menuDropdown').classList.toggle('active');
         }
-      }
-    }
 
-    // ═══════════════════════════════════════════════════════
-    // Auth Flow - CORRIGIDO
-    // ═══════════════════════════════════════════════════════
-    async function handleConnect() {
-      const pk = await walletManager.connect();
-      if (!pk) return;
-      
-      els.connect.disabled = true;
-      const originalText = els.connect.innerHTML;
-      els.connect.innerHTML = '<span class="animate-spin">⟳</span> ' + t('connecting');
-      
-      try {
-        // Step 1: Get challenge da API
-        console.log('Obtendo challenge...');
-        const challengeRes = await fetch(`${API_URL}/challenge`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet: pk })
+        function showHashInfo() {
+            document.getElementById('modalHashValue').textContent = state.soulhash || '-';
+            document.getElementById('modalWalletValue').textContent = state.wallet ? 
+                `${state.wallet.slice(0, 6)}...${state.wallet.slice(-4)}` : '-';
+            document.getElementById('hashModal').classList.add('active');
+            toggleMenu();
+        }
+
+        function showWithdraw() {
+            document.getElementById('withdrawBalance').textContent = state.balance;
+            document.getElementById('withdrawModal').classList.add('active');
+            toggleMenu();
+        }
+
+        async function withdraw() {
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            
+            if (!amount || amount < 20) {
+                alert('Valor mínimo de saque é 20 Hash.');
+                return;
+            }
+            
+            if (amount > state.balance) {
+                alert('Saldo insuficiente.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/reward`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-token': state.sessionToken
+                    },
+                    body: JSON.stringify({ 
+                        amount,
+                        wallet: state.wallet 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    state.balance = data.remainingBalance;
+                    updateUI();
+                    closeModal('withdrawModal');
+                    alert(`Saque de ${amount} Hash realizado com sucesso!\nTX: ${data.txSimulated}`);
+                } else {
+                    alert(data.error || 'Erro ao realizar saque.');
+                }
+                
+            } catch (error) {
+                console.error('Erro no withdraw:', error);
+                alert('Erro ao realizar saque. Tente novamente.');
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            document.getElementById('soundToggle').textContent = state.soundEnabled ? '🔊' : '🔇';
+            document.getElementById('soundIcon').textContent = state.soundEnabled ? '🔊' : '🔇';
+            toggleMenu();
+        }
+
+        function toggleVolumeControl() {
+            document.getElementById('volumeControl').classList.toggle('show');
+        }
+
+        function setVolume(value) {
+            state.volume = value / 100;
+            audioManager.setVolume(value);
+        }
+
+        // ==================== LANGUAGE ====================
+        function changeLanguage(lang) {
+            state.language = lang;
+            updateTexts();
+            const grid = document.getElementById('slotGrid');
+            if (grid.children.length > 0 && !state.isSpinning) {
+                Array.from(grid.children).forEach(card => {
+                    const type = card.getAttribute('data-type');
+                    if (cardTypes[type]) {
+                        const label = cardTypes[type].label[lang] || cardTypes[type].label.en;
+                        card.querySelector('.card-label').textContent = label;
+                    }
+                });
+            }
+        }
+
+        function updateTexts() {
+            const t = translations[state.language];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    el.textContent = t[key];
+                }
+            });
+        }
+
+        // ==================== INICIALIZAÇÃO ====================
+        window.addEventListener('load', () => {
+            updateTexts();
         });
-        
-        if (!challengeRes.ok) {
-          throw new Error('Erro ao obter challenge: ' + challengeRes.status);
-        }
-        
-        const challengeData = await challengeRes.json();
-        const message = challengeData.message;
-        console.log('Challenge recebido:', message.substring(0, 50) + '...');
-        
-        // Step 2: Assinar mensagem com Phantom
-        console.log('Assinando mensagem...');
-        const signature = await walletManager.signMessage(message);
-        console.log('Assinatura:', signature.substring(0, 30) + '...');
-        
-        // Step 3: Verificar assinatura
-        console.log('Verificando assinatura...');
-        const verifyRes = await fetch(`${API_URL}/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet: pk, signature: signature })
+
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('active');
+            }
+            if (!e.target.closest('.sound-toggle') && !e.target.closest('.volume-control')) {
+                document.getElementById('volumeControl').classList.remove('show');
+            }
         });
-        
-        if (!verifyRes.ok) {
-          const errData = await verifyRes.json();
-          throw new Error(errData.error || 'Erro na verificação');
-        }
-        
-        const data = await verifyRes.json();
-        console.log('Autenticação bem-sucedida!', data);
-        
-        // Salva sessão
-        sessionToken = data.sessionToken;
-        userData = data;
-        localStorage.setItem('soulhash_token', sessionToken);
-        
-        // Mostra tela do jogo
-        showGame();
-        updateUI();
-        
-        // Mensagem de sucesso
-        showStatus(t('connected') + ' ' + (data.isNew ? '(+100 Hash bônus!)' : ''), 'success');
-        els.msg.textContent = t('readyMsg');
-        els.msg.className = 'message success';
-        
-      } catch (err) {
-        console.error('Erro na autenticação:', err);
-        showStatus(t('error') + ': ' + err.message, 'error');
-        els.msg.textContent = t('error') + ': ' + err.message;
-        els.msg.className = 'message error';
-        walletManager.disconnect();
-      } finally {
-        els.connect.disabled = false;
-        els.connect.innerHTML = originalText;
-      }
-    }
 
-    async function fetchUser() {
-      const res = await fetch(`${API_URL}/me`, {
-        headers: { 'X-Session-Token': sessionToken }
-      });
-      
-      if (!res.ok) {
-        throw new Error('Sessão inválida: ' + res.status);
-      }
-      
-      userData = await res.json();
-      return userData;
-    }
-
-    function showGame() {
-      screens.login.classList.remove('active');
-      screens.game.classList.add('active');
-    }
-
-    function updateUI() {
-      if (!userData) return;
-      
-      els.soul.textContent = userData.soulhash.slice(0, 16) + '...';
-      els.lvl.textContent = userData.level;
-      els.hash.textContent = userData.balance;
-      els.usd.textContent = '$' + (userData.balance * 0.01).toFixed(2);
-      
-      const pct = (userData.energy / userData.maxEnergy) * 100;
-      els.energyFill.style.width = pct + '%';
-      els.energyText.textContent = `${Math.floor(userData.energy)}/${userData.maxEnergy}`;
-      
-      if (userData.energy < 10) {
-        els.spin.disabled = true;
-        els.msg.textContent = t('insufficientEnergy');
-        els.msg.className = 'message error';
-      } else {
-        els.spin.disabled = false;
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════
-    // Game Logic
-    // ═══════════════════════════════════════════════════════
-    async function handleSpin() {
-      if (!sessionToken || !userData || userData.energy < 10) {
-        els.msg.textContent = t('insufficientEnergy');
-        els.msg.className = 'message error';
-        return;
-      }
-      
-      els.spin.disabled = true;
-      els.msg.textContent = t('spinText') + '...';
-      els.msg.className = 'message';
-      
-      try {
-        const res = await fetch(`${API_URL}/spin`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Session-Token': sessionToken
-          }
-        });
-        
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Erro no spin');
-        }
-        
-        const data = await res.json();
-        userData = data;
-        
-        // Renderiza grid
-        renderGrid(data.grid, data.winPositions, data.crystalInCenter);
-        updateUI();
-        updateMini(data.grid);
-        
-        // Mensagem de resultado
-        if (data.crystalWin) {
-          els.msg.textContent = t('crystalWin');
-          els.msg.className = 'message crystal';
-        } else if (data.isWin) {
-          els.msg.textContent = `${t('win')} +${data.reward} ${t('hashLabel')}`;
-          els.msg.className = 'message success';
-        } else {
-          els.msg.textContent = `${t('lose')} +${data.reward} ${t('hashLabel')}`;
-          els.msg.className = 'message';
-        }
-        
-        els.reward.textContent = data.reward;
-        
-      } catch (err) {
-        console.error('Erro no spin:', err);
-        els.msg.textContent = t('error') + ': ' + err.message;
-        els.msg.className = 'message error';
-      } finally {
-        els.spin.disabled = false;
-      }
-    }
-
-    function renderGrid(grid, wins = [], crystalCenter) {
-      const slots = els.grid.querySelectorAll('.card-slot');
-      slots.forEach((slot, i) => {
-        slot.innerHTML = '';
-        slot.className = 'card-slot';
-        
-        const type = grid[i];
-        const cfg = cards[type];
-        
-        if (cfg) {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <span class="card-icon">${cfg.icon}</span>
-            <span class="card-name">${type}</span>
-          `;
-          card.style.color = cfg.c;
-          slot.appendChild(card);
-          
-          if (crystalCenter && i === 4) {
-            slot.classList.add('crystal');
-          }
-          
-          if (wins.includes(i)) {
-            slot.classList.add('win');
-          }
-        }
-      });
-    }
-
-    function updateMini(grid) {
-      els.mini.innerHTML = '';
-      grid.forEach(type => {
-        const cfg = cards[type];
-        const mc = document.createElement('div');
-        mc.className = 'mini-card';
-        mc.textContent = cfg ? cfg.icon : '?';
-        mc.style.color = cfg ? cfg.c : '#fff';
-        els.mini.appendChild(mc);
-      });
-    }
-
-    function showModal(type) {
-      if (type === 'info' && userData) {
-        $('infoTotalHash').textContent = userData.balance;
-        $('infoTotalUsd').textContent = '$' + (userData.balance * 0.01).toFixed(2);
-        $('infoSpins').textContent = userData.stats.spins;
-        $('infoWins').textContent = userData.stats.wins;
-        $('infoCrystals').textContent = userData.stats.crystals || 0;
-        els.infoModal.classList.add('active');
-      } else if (type === 'withdraw') {
-        els.withModal.classList.add('active');
-      }
-    }
-
-    async function handleWithdraw() {
-      const amt = parseInt($('withdrawAmount').value);
-      const addr = $('withdrawAddress').value;
-      
-      if (!amt || amt < 50) {
-        alert(currentLang === 'pt' ? 'Mínimo: 50 Hash' : 
-              currentLang === 'en' ? 'Minimum: 50 Hash' :
-              currentLang === 'es' ? 'Mínimo: 50 Hash' : '最小：50 Hash');
-        return;
-      }
-      
-      try {
-        const res = await fetch(`${API_URL}/reward`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Session-Token': sessionToken
-          },
-          body: JSON.stringify({ amount: amt, address: addr })
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok) {
-          userData = await fetchUser();
-          updateUI();
-          els.withModal.classList.remove('active');
-          els.msg.textContent = `${currentLang === 'pt' ? 'Saque' : 'Withdraw'} ${amt} Hash! TX: ${data.txHash.slice(0, 20)}...`;
-          els.msg.className = 'message success';
-        } else {
-          throw new Error(data.error);
-        }
-      } catch (err) {
-        alert(t('error') + ': ' + err.message);
-      }
-    }
-
-    function logout() {
-      localStorage.removeItem('soulhash_token');
-      sessionToken = null;
-      userData = null;
-      walletManager.disconnect();
-      
-      screens.game.classList.remove('active');
-      screens.login.classList.add('active');
-      els.dropdown.classList.remove('active');
-      
-      els.msg.textContent = t('readyMsg');
-      els.msg.className = 'message';
-    }
-
-    // Energy regeneration
-    setInterval(async () => {
-      if (sessionToken) {
-        try {
-          await fetchUser();
-          updateUI();
-        } catch (err) {
-          console.error('Erro ao atualizar energia:', err);
-        }
-      }
-    }, 60000);
-  </script>
+        // Prevenir cold start
+        setInterval(() => {
+            fetch(`${API_URL}/health`).catch(() => {});
+        }, 14 * 60 * 1000);
+    </script>
 </body>
-                                                  </html>
+          </html>
