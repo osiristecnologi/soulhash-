@@ -23,35 +23,35 @@ const authLimiter = rateLimit({ windowMs: 60_000, max: 15 });
 // ═══════════════════════════════════════════════════════
 const GAME = {
   MAX_ENERGY:         10,
-  ENERGY_ON_LOGIN:    10,    // energia SEMPRE cheia ao login
-  BONUS_WIN_HASH:     50,
-  BONUS_LOSE_HASH:    10,
-  MAGIC_CARD_ENERGY:  20,    // bônus de energia ao acertar carta MAGIA no centro
-  MAGIC_CARD_HASH:    20,    // bônus de hash ao acertar carta MAGIA
+  ENERGY_ON_LOGIN:    10,
   INITIAL_BALANCE:    100,
   WITHDRAW_MIN:       20,
-  WIN_PROBABILITY:    0.30,  // 30% chance
+  WIN_PROBABILITY:    0.30,   // 30% chance de vitória
+  CRYSTAL_PROBABILITY: 0.01,  // 1% chance de cristal
+  WIN_REWARD:         20,     // +20 Hash na vitória
+  CRYSTAL_REWARD:     500,    // +500 Hash no cristal
+  CRYSTAL_CASH:       20,     // $20 no cristal
+  SPIN_COST:          10,     // -10 Hash por jogada
 };
 
-// Cartas disponíveis — MAGIA adicionada
-const CARDS = ["fire", "water", "earth", "air", "magic"];
+// Cartas disponíveis
+const CARDS = ["fire", "water", "earth", "air", "crystal"];
 
 // ═══════════════════════════════════════════════════════
 //  STORAGE EM MEMÓRIA
-//  (produção: substituir por PostgreSQL + Redis)
 // ═══════════════════════════════════════════════════════
-const challenges       = new Map(); // wallet   → { message, used }
-const sessions         = new Map(); // token    → wallet
-const walletToSoulhash = new Map(); // wallet   → soulhash
-const soulhashToWallet = new Map(); // soulhash → wallet
-const balances         = new Map(); // soulhash → balance
-const energyStore      = new Map(); // soulhash → energy
-const statsStore       = new Map(); // soulhash → { spins, wins, xp }
+const challenges       = new Map();
+const sessions         = new Map();
+const walletToSoulhash = new Map();
+const soulhashToWallet = new Map();
+const balances         = new Map();
+const energyStore      = new Map();
+const statsStore       = new Map();
+const cashStore        = new Map(); // Armazena $ para cada usuário
 
 // ═══════════════════════════════════════════════════════
 //  UTILITÁRIOS
 // ═══════════════════════════════════════════════════════
-
 function isValidWallet(w) {
   return typeof w === "string" && w.length >= 10 && w.length <= 64;
 }
@@ -75,7 +75,9 @@ function requireSession(req, res, next) {
 //  LÓGICA DO SPIN (somente servidor)
 // ═══════════════════════════════════════════════════════
 function computeSpin() {
-  const isWin = Math.random() < GAME.WIN_PROBABILITY;
+  const rand = Math.random();
+  const isCrystal = rand < GAME.CRYSTAL_PROBABILITY; // 1%
+  const isWin = isCrystal || (rand < (GAME.CRYSTAL_PROBABILITY + GAME.WIN_PROBABILITY)); // 31% total
 
   // Gera grid 3×3
   const grid = Array.from({ length: 9 }, () =>
@@ -90,23 +92,23 @@ function computeSpin() {
 
   let winPositions = [];
   let combo        = "none";
-  let magicCenter  = false;
 
-  if (isWin) {
+  if (isCrystal) {
+    // Cristal aparece em posição aleatória
+    const crystalPos = Math.floor(Math.random() * 9);
+    grid[crystalPos] = "crystal";
+    winPositions = [crystalPos];
+    combo = "crystal";
+  } else if (isWin) {
     // Força uma linha vencedora
     const lineIdx = Math.floor(Math.random() * WIN_LINES.length);
     const [a, b, c] = WIN_LINES[lineIdx];
-
-    // 15% de chance de ser carta MAGIA na vitória
-    const winner  = Math.random() < 0.15 ? "magic" : CARDS[Math.floor(Math.random() * (CARDS.length - 1))];
+    const winner = CARDS[Math.floor(Math.random() * (CARDS.length - 1))]; // Não inclui crystal
     grid[a] = grid[b] = grid[c] = winner;
     winPositions = [a, b, c];
-    combo        = winner === "magic" ? "magic_line" : "3linha";
-
-    // Carta MAGIA no centro (posição 4) = bônus especial
-    if (grid[4] === "magic" && isWin) magicCenter = true;
+    combo = "3linha";
   } else {
-    // Derrota: garante que não há linha vencedora acidental
+    // Derrota: garante que não há linha vencedora
     let tries = 0;
     while (tries++ < 50) {
       let hasWin = false;
@@ -118,19 +120,15 @@ function computeSpin() {
     }
   }
 
-  // Carta MAGIA no centro mesmo na derrota = bônus extra
-  if (grid[4] === "magic") magicCenter = true;
-
-  return { grid, isWin, winPositions, combo, magicCenter };
+  return { grid, isWin, isCrystal, winPositions, combo };
 }
 
 // ═══════════════════════════════════════════════════════
 //  ROTAS
 // ═══════════════════════════════════════════════════════
 
-// GET / — healthcheck
 app.get("/", (req, res) => {
-  res.json({ status: "ok", service: "SoulHash API", version: "v5" });
+  res.json({ status: "ok", service: "SoulHash API", version: "v6" });
 });
 
 // ── POST /challenge ──────────────────────────────────
@@ -157,21 +155,18 @@ app.post("/verify", authLimiter, (req, res) => {
 
   entry.used = true;
 
-  // Gera/recupera soulhash
   const soulhash = generateSoulHash(wallet);
   const isNew    = !walletToSoulhash.has(wallet);
 
   walletToSoulhash.set(wallet, soulhash);
   soulhashToWallet.set(soulhash, wallet);
 
-  // Inicializa dados se novo
   if (isNew) {
     balances.set(soulhash, GAME.INITIAL_BALANCE);
+    energyStore.set(soulhash, GAME.MAX_ENERGY);
     statsStore.set(soulhash, { spins: 0, wins: 0, xp: 0 });
+    cashStore.set(soulhash, 0); // Inicia com $0
   }
-
-  // ★ ENERGIA SEMPRE CHEIA AO LOGIN (servidor é fonte de verdade)
-  energyStore.set(soulhash, GAME.MAX_ENERGY);
 
   const token = crypto.randomBytes(24).toString("hex");
   sessions.set(token, wallet);
@@ -181,7 +176,7 @@ app.post("/verify", authLimiter, (req, res) => {
     soulhash,
     isNew,
     balance:    balances.get(soulhash),
-    energy:     GAME.MAX_ENERGY,      // ★ sempre cheia
+    energy:     GAME.MAX_ENERGY,
     maxEnergy:  GAME.MAX_ENERGY,
     level:      calcLevel(statsStore.get(soulhash)?.xp ?? 0),
     stats:      statsStore.get(soulhash),
@@ -192,60 +187,60 @@ app.post("/verify", authLimiter, (req, res) => {
 app.post("/spin", requireSession, (req, res) => {
   const { soulhash } = req;
 
-  // Verifica energia
-  const currentEnergy = energyStore.get(soulhash) ?? 0;
-  if (currentEnergy <= 0) {
-    return res.status(400).json({ error: "Sem energia. Aguarde recarga." });
+  // Verifica saldo (backend é fonte de verdade)
+  const currentBalance = balances.get(soulhash) ?? 0;
+  if (currentBalance < GAME.SPIN_COST) {
+    return res.status(400).json({ error: "Hash insuficiente." });
   }
 
   // Calcula resultado (somente servidor)
-  const { grid, isWin, winPositions, combo, magicCenter } = computeSpin();
-
-  // Atualiza energia (servidor controla)
-  const newEnergy = Math.max(0, currentEnergy - 1);
-  energyStore.set(soulhash, newEnergy);
+  const { grid, isWin, isCrystal, winPositions, combo } = computeSpin();
 
   // Calcula recompensa
-  let reward        = isWin ? GAME.BONUS_WIN_HASH : GAME.BONUS_LOSE_HASH;
-  let energyBonus   = 0;
-  let magicBonus    = false;
+  let reward = 0;
+  let cashReward = 0;
 
-  if (magicCenter) {
-    // Carta MAGIA no centro = bônus especial
-    reward      += GAME.MAGIC_CARD_HASH;
-    energyBonus  = GAME.MAGIC_CARD_ENERGY;
-    magicBonus   = true;
-
-    // Aplica bônus de energia (não ultrapassa máximo)
-    const newEnergyWithBonus = Math.min(GAME.MAX_ENERGY, newEnergy + energyBonus);
-    energyStore.set(soulhash, newEnergyWithBonus);
+  if (isCrystal) {
+    reward = GAME.CRYSTAL_REWARD;
+    cashReward = GAME.CRYSTAL_CASH;
+  } else if (isWin) {
+    reward = GAME.WIN_REWARD;
   }
 
-  // Atualiza balance (backend é fonte de verdade)
-  const currentBalance = balances.get(soulhash) ?? 0;
-  const newBalance     = currentBalance + reward;
+  // Debita custo da jogada
+  const newBalance = currentBalance - GAME.SPIN_COST + reward;
   balances.set(soulhash, newBalance);
+
+  // Adiciona cash se for cristal
+  if (cashReward > 0) {
+    const currentCash = cashStore.get(soulhash) ?? 0;
+    cashStore.set(soulhash, currentCash + cashReward);
+  }
+
+  // Debita 1 de energia
+  const currentEnergy = energyStore.get(soulhash) ?? 0;
+  const newEnergy = Math.max(0, currentEnergy - 1);
+  energyStore.set(soulhash, newEnergy);
 
   // Atualiza stats
   const stats = statsStore.get(soulhash) ?? { spins: 0, wins: 0, xp: 0 };
   stats.spins++;
-  if (isWin) stats.wins++;
-  stats.xp += isWin ? 40 : 10;
+  if (isWin || isCrystal) stats.wins++;
+  stats.xp += isCrystal ? 100 : isWin ? 40 : 10;
   statsStore.set(soulhash, stats);
 
   res.json({
     grid,
-    isWin,
+    isWin: isWin || isCrystal,
+    isCrystal,
     winPositions,
     combo,
-    reward,
-    magicBonus,        // ★ indica bônus da carta MAGIA
-    magicCenter,       // ★ carta MAGIA estava no centro
-    energyBonus,       // ★ energia bônus recebida
-    balance:  newBalance,
-    energy:   energyStore.get(soulhash),
+    reward: isCrystal ? reward : (isWin ? reward : 0),
+    cashReward,
+    balance: newBalance,
+    energy: newEnergy,
     maxEnergy: GAME.MAX_ENERGY,
-    level:    calcLevel(stats.xp),
+    level: calcLevel(stats.xp),
     stats,
   });
 });
@@ -253,7 +248,7 @@ app.post("/spin", requireSession, (req, res) => {
 // ── POST /reward ─────────────────────────────────────
 app.post("/reward", requireSession, (req, res) => {
   const { soulhash, wallet } = req;
-  const { amount }           = req.body;
+  const { amount } = req.body;
 
   if (!amount || isNaN(amount) || amount < GAME.WITHDRAW_MIN) {
     return res.status(400).json({
@@ -269,13 +264,9 @@ app.post("/reward", requireSession, (req, res) => {
     });
   }
 
-  // Debita balance (backend controla)
   const newBalance = balance - amount;
   balances.set(soulhash, newBalance);
 
-  // ── Aqui entra futura integração Solana ──────────
-  // const txHash = await sendSolanaTransaction(wallet, amount);
-  // Por agora: simulação
   const simulatedTx = `SIM_${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
   console.log(`[REWARD] ${amount} Hash → ${wallet} | tx: ${simulatedTx}`);
 
@@ -284,12 +275,11 @@ app.post("/reward", requireSession, (req, res) => {
     paidTo:           wallet,
     amount,
     remainingBalance: newBalance,
-    txSimulated:      simulatedTx,   // substituir por txHash real
-    // solanaReady:   true,          // ativar quando integrar Solana Pay
+    txSimulated:      simulatedTx,
   });
 });
 
-// ── POST /me — estado atual da sessão ────────────────
+// ── GET /me ────────────────────────────────────────
 app.get("/me", requireSession, (req, res) => {
   const { soulhash, wallet } = req;
   const stats = statsStore.get(soulhash) ?? { spins: 0, wins: 0, xp: 0 };
@@ -297,6 +287,7 @@ app.get("/me", requireSession, (req, res) => {
     soulhash,
     wallet:   wallet.slice(0,6) + "..." + wallet.slice(-4),
     balance:  balances.get(soulhash) ?? 0,
+    cash:     cashStore.get(soulhash) ?? 0,
     energy:   energyStore.get(soulhash) ?? 0,
     maxEnergy: GAME.MAX_ENERGY,
     level:    calcLevel(stats.xp),
@@ -321,12 +312,12 @@ app.use((req, res) => {
 // ═══════════════════════════════════════════════════════
 app.listen(PORT, () => {
   console.log(`\n╔════════════════════════════════════════════╗`);
-  console.log(`║  SoulHash API v5  —  Porta ${PORT}             ║`);
+  console.log(`║  SoulHash API v6  —  Porta ${PORT}             ║`);
   console.log(`╚════════════════════════════════════════════╝`);
   console.log(`  GET  /`);
   console.log(`  POST /challenge  → desafio para Phantom`);
-  console.log(`  POST /verify     → autentica + energia cheia`);
-  console.log(`  POST /spin       → gira cartas`);
+  console.log(`  POST /verify     → autentica + 100 Hash`);
+  console.log(`  POST /spin       → gira cartas (-10 Hash)`);
   console.log(`  POST /reward     → saque de hash`);
   console.log(`  GET  /me         → estado da sessão\n`);
 });
