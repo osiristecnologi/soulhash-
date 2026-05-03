@@ -139,7 +139,10 @@ app.post("/challenge", authLimiter, (req, res) => {
     return res.status(400).json({ error: "Wallet inválida." });
   }
 
-  const message = `SoulHash:${wallet}:${Date.now()}`;
+  // 🔧 CORREÇÃO AQUI (REMOVIDO Date.now)
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const message = `SoulHash:${wallet}:${nonce}`;
+
   challenges.set(wallet, { message, used: false });
 
   res.json({ message });
@@ -306,13 +309,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Erro interno do servidor." });
 });
 
-// ═══════════════════════════════════════════════════════
 // START
-// ═══════════════════════════════════════════════════════
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n╔════════════════════════════════════════════╗`);
-  console.log(`║  SoulHash API — Porta ${PORT}                  ║`);
-  console.log(`╚════════════════════════════════════════════╝`);
-  console.log(`  Servidor rodando em http://localhost:${PORT}`);
-  console.log(`  Health check: http://localhost:${PORT}/health\n`);
+  console.log(`SoulHash API rodando na porta ${PORT}`);
 });
