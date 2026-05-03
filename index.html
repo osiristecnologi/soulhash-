@@ -104,6 +104,17 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 
 #s-arena{flex-direction:column;min-height:100vh}
 .topbar{height:60px;background:rgba(6,4,14,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);gap:10px}
+
+/* Language Selector - Top Left */
+.lang-selector{position:relative}
+.btn-lang{background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:8px;padding:6px 14px;color:var(--gold);font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:6px}
+.btn-lang:hover{border-color:var(--gold-d);background:rgba(201,162,39,.08)}
+.lang-dropdown{position:absolute;top:calc(100% + 8px);left:0;background:#0e0c1a;border:1px solid var(--border2);border-radius:12px;min-width:180px;z-index:200;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.8);display:none;animation:fadeUp .2s ease}
+.lang-dropdown.open{display:block}
+.lang-item{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;transition:background .2s;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:var(--text-d);border:none;background:transparent;width:100%;text-align:left}
+.lang-item:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.lang-item.active{color:var(--gold);background:rgba(201,162,39,.08)}
+
 .tb-player{display:flex;align-items:center;gap:10px;min-width:170px}
 .tb-av{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#2a1840,#0e0820);border:1.5px solid var(--sombra);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px rgba(139,92,246,.4);flex-shrink:0}
 .tb-hash-lbl{font-family:'Cinzel',serif;font-size:11px;color:var(--gold-l);letter-spacing:1px}
@@ -153,6 +164,13 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 @keyframes win-p{0%,100%{box-shadow:0 0 0 3px var(--gold),0 0 28px rgba(201,162,39,.4)}50%{box-shadow:0 0 0 3px var(--gold),0 0 55px rgba(201,162,39,.9)}}
 .card-lose{opacity:.4;filter:grayscale(.8)}
 
+/* Carta Diamante/Cristal */
+.card-crystal{border-color:rgba(168,85,247,.8)!important;box-shadow:0 0 30px rgba(168,85,247,.6)!important;animation:crystal-pulse 1.5s ease-in-out infinite}
+.card-crystal .card-glow{background:radial-gradient(circle at 50% 40%,rgba(168,85,247,.9),rgba(147,51,234,.5),transparent 70%);opacity:.6}
+.card-crystal .card-art{animation:crystal-shine .8s ease-in-out infinite}
+@keyframes crystal-pulse{0%,100%{box-shadow:0 0 20px rgba(168,85,247,.4),0 0 0 2px rgba(168,85,247,.3)}50%{box-shadow:0 0 50px rgba(168,85,247,.9),0 0 0 4px rgba(168,85,247,.6)}}
+@keyframes crystal-shine{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
 .spin-area{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:430px}
 .btn-spin{width:190px;padding:15px 0;background:linear-gradient(135deg,#a020d0,#7010a0);border:2px solid #c030f0;border-radius:40px;font-family:'Cinzel Decorative',serif;font-size:19px;color:#fff;letter-spacing:2px;cursor:pointer;box-shadow:0 0 28px rgba(160,32,208,.5);transition:all .3s}
 .btn-spin:hover:not(:disabled){transform:translateY(-3px) scale(1.02);box-shadow:0 0 50px rgba(160,32,208,.7)}
@@ -191,11 +209,13 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 .result-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .rbox-win::before{background:linear-gradient(90deg,transparent,var(--gold),transparent)}
 .rbox-lose::before{background:linear-gradient(90deg,transparent,var(--caos),transparent)}
+.rbox-crystal::before{background:linear-gradient(90deg,transparent,#a855f7,transparent)}
 .r-emoji{font-size:58px;margin-bottom:14px;animation:emoji-in .6s cubic-bezier(.34,1.56,.64,1) .15s both}
 @keyframes emoji-in{from{opacity:0;transform:scale(.2) translateY(-20px)}to{opacity:1;transform:scale(1)}}
 .r-title{font-family:'Cinzel Decorative',serif;font-size:26px;margin-bottom:7px}
 .rbox-win  .r-title{color:var(--gold);text-shadow:0 0 28px rgba(201,162,39,.6)}
 .rbox-lose .r-title{color:var(--caos);text-shadow:0 0 24px rgba(232,64,64,.5)}
+.rbox-crystal .r-title{color:#c084fc;text-shadow:0 0 35px rgba(168,85,247,.8)}
 .r-desc{font-size:14px;color:var(--text-d);line-height:1.8;margin-bottom:8px}
 .r-combo{font-family:'Cinzel',serif;font-size:12px;color:var(--sombra);margin-bottom:20px;letter-spacing:1px}
 .r-reward{background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:11px;padding:13px;margin-bottom:22px}
@@ -204,6 +224,7 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 .btn-result{width:100%;background:transparent;border-radius:10px;padding:13px;font-family:'Cinzel',serif;font-size:12px;letter-spacing:3px;cursor:pointer;transition:all .3s;border:1px solid}
 .rbox-win  .btn-result{border-color:var(--gold);color:var(--gold)}.rbox-win  .btn-result:hover{background:rgba(201,162,39,.1)}
 .rbox-lose .btn-result{border-color:var(--caos);color:var(--caos)}.rbox-lose .btn-result:hover{background:rgba(232,64,64,.1)}
+.rbox-crystal .btn-result{border-color:#a855f7;color:#c084fc}.rbox-crystal .btn-result:hover{background:rgba(168,85,247,.1)}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel2);border:1px solid var(--gold-d);border-radius:10px;padding:11px 22px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:var(--gold-l);z-index:999;white-space:nowrap;box-shadow:0 8px 40px rgba(0,0,0,.8);transition:transform .4s cubic-bezier(.34,1.56,.64,1);max-width:90vw;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -370,6 +391,57 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 .wd-feedback.success{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:#86efac}
 .wd-feedback.error  {background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5}
 
+/* Crystal Bonus Overlay */
+.crystal-bonus-overlay{
+  position:fixed;inset:0;z-index:800;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.9);backdrop-filter:blur(12px);
+}
+.crystal-bonus-overlay.on{display:flex}
+.crystal-bonus-box{
+  background:linear-gradient(155deg,#1a0830,#0d0420);
+  border:3px solid #a855f7;border-radius:25px;
+  padding:50px 60px;text-align:center;max-width:450px;width:90%;
+  position:relative;overflow:hidden;
+  animation:rin .5s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 0 80px rgba(168,85,247,.6),0 0 150px rgba(168,85,247,.3);
+}
+.crystal-bonus-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,#a855f7,#c084fc,#a855f7,transparent);
+}
+.crystal-emoji{font-size:80px;margin-bottom:20px;animation:crystal-bounce 1s ease-in-out infinite}
+@keyframes crystal-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+.crystal-title{
+  font-family:'Cinzel Decorative',serif;font-size:28px;
+  color:#c084fc;text-shadow:0 0 30px #a855f7;margin-bottom:10px;
+}
+.crystal-subtitle{
+  font-family:'Cinzel',serif;font-size:12px;letter-spacing:4px;
+  color:#9333ea;margin-bottom:25px;
+}
+.crystal-rewards{
+  display:flex;gap:20px;justify-content:center;margin:25px 0;
+}
+.cr-reward{
+  background:rgba(168,85,247,.15);border:2px solid rgba(168,85,247,.4);
+  border-radius:15px;padding:20px 30px;min-width:120px;
+}
+.cr-val{font-family:'Cinzel',serif;font-size:32px;color:#c084fc;text-shadow:0 0 15px #a855f7}
+.cr-lbl{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;color:#9333ea;margin-top:6px}
+.cr-message{
+  font-size:13px;color:#a78bfa;font-family:'Cinzel',serif;
+  letter-spacing:2px;margin-bottom:25px;line-height:1.8;
+}
+.btn-crystal-ok{
+  width:100%;background:linear-gradient(135deg,#a855f7,#7e22ce);
+  border:none;border-radius:12px;padding:16px;
+  color:#fff;font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;
+  cursor:pointer;transition:all .3s;margin-top:10px;
+  box-shadow:0 0 30px rgba(168,85,247,.4);
+}
+.btn-crystal-ok:hover{box-shadow:0 0 50px rgba(168,85,247,.7);transform:translateY(-2px)}
+
 </style>
 </head>
 <body>
@@ -460,7 +532,7 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
       <div class="bonus-desc" style="text-align:center">
         Sua alma chegou ao universo.<br>
         100 Hash foram creditados na sua conta.<br>
-        <span style="font-size:12px;color:var(--text-d)">Fase 1 — Jogo de Cartas: combine 3 iguais para avançar de fase.</span>
+        <span style="font-size:12px;color:var(--text-d)">Fase 1 — Jogo de Cartas: combine 3 iguais para ganhar.</span>
       </div>
       <button class="btn-gold" id="btn-enter-arena">⚔ &nbsp;ENTRAR NO UNIVERSO</button>
     </div>
@@ -472,21 +544,25 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
   <div style="width:100%;display:flex;flex-direction:column">
 
     <div class="topbar">
-      <div class="tb-player">
-        <div class="tb-av">👤</div>
-        <div>
-          <div class="tb-hash-lbl" id="tb-hash">—</div>
-          <div class="tb-lvl-lbl">NV <span id="tb-lvl">1</span></div>
-          <div class="tb-xp"><div class="tb-xp-f" id="tb-xpf" style="width:5%"></div></div>
+      <!-- Language Selector - Top Left -->
+      <div class="lang-selector">
+        <button class="btn-lang" id="btn-lang" onclick="toggleLang()">🌐 <span id="current-lang">PT</span></button>
+        <div class="lang-dropdown" id="lang-dropdown">
+          <button class="lang-item active" onclick="setLanguage('pt')" data-lang="pt">🇵🇹 Português</button>
+          <button class="lang-item" onclick="setLanguage('en')" data-lang="en">🇬🇧 English</button>
+          <button class="lang-item" onclick="setLanguage('ja')" data-lang="ja">🇯🇵 日本語</button>
+          <button class="lang-item" onclick="setLanguage('zh')" data-lang="zh">🇨 中文</button>
+          <button class="lang-item" onclick="setLanguage('es')" data-lang="es">🇪 Español</button>
         </div>
       </div>
+
       <div class="tb-center">
         <div class="tb-title">SoulHash Universo</div>
         <div class="tb-sub">FASE I — JOGO DAS ALMAS</div>
       </div>
+
       <div class="tb-cur">
-        <div class="cpill"><div class="cpill-i">💎</div><div class="cpill-v" id="gem-val">0</div></div>
-        <div class="cpill"><div class="cpill-i">🔷</div><div class="cpill-v" id="hash-val">100</div></div>
+        <div class="cpill"><div class="cpill-i">💎</div><div class="cpill-v" id="hash-val">100</div></div>
         <div class="menu-wrap">
           <button class="btn-menu" id="btn-menu" onclick="toggleMenu()">⚙ MENU</button>
           <div class="dropdown-menu" id="dropdown-menu">
@@ -496,7 +572,7 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
             </div>
             <div class="dm-balance">
               <div class="dm-bal-lbl">SALDO</div>
-              <div class="dm-bal-val"><span id="dm-balance-val">0</span> Hash</div>
+              <div class="dm-bal-val"><span id="dm-balance-val">100</span> Hash</div>
             </div>
             <button class="dm-item" onclick="menuToggleSound()">
               <span id="dm-sound-icon">🔊</span>
@@ -528,23 +604,23 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
         </div>
         <div class="lp-sec">
           <div class="lp-title">COMBINAÇÕES</div>
-          <div class="combo-row"><div style="color:var(--sombra);font-size:13px;width:18px;flex-shrink:0">◆</div><div><div class="combo-name" style="color:var(--sombra)">3 IGUAIS NA LINHA</div><div class="combo-desc">Ativa Efeito Forte · +50 Hash</div></div></div>
+          <div class="combo-row"><div style="color:var(--sombra);font-size:13px;width:18px;flex-shrink:0">◆</div><div><div class="combo-name" style="color:var(--sombra)">3 IGUAIS NA LINHA</div><div class="combo-desc">Ativa Efeito Forte · +20 Hash</div></div></div>
           <div class="combo-row"><div style="color:var(--empatia);font-size:13px;width:18px;flex-shrink:0">✦</div><div><div class="combo-name" style="color:var(--empatia)">DIAGONAL COMPLETA</div><div class="combo-desc">Habilidade Épica · +80 Hash</div></div></div>
           <div class="combo-row"><div style="color:var(--gold);font-size:13px;width:18px;flex-shrink:0">◉</div><div><div class="combo-name" style="color:var(--gold)">CENTRO + 4 CANTOS</div><div class="combo-desc">Alma Rara · +120 Hash</div></div></div>
           <div class="combo-row"><div style="color:var(--equil);font-size:13px;width:18px;flex-shrink:0">⬡</div><div><div class="combo-name" style="color:var(--equil)">TODOS DIFERENTES</div><div class="combo-desc">Recompensa Especial · +60 Hash</div></div></div>
         </div>
       </div>
 
-      <!-- ✅ ERRO 1, 2 e 3 CORRIGIDOS: center-col agora contém TODOS os seus filhos -->
+      <!-- CENTER -->
       <div class="center-col">
         <div class="card-grid" id="card-grid"></div>
 
         <div class="spin-area">
           <button class="btn-spin" id="btn-spin">GIRAR</button>
-          <div class="spin-lbl">1 ENERGIA DA ALMA</div>
+          <div class="spin-lbl">-10 HASH</div>
           <div style="display:flex;align-items:center;gap:10px">
             <div class="epips" id="epips"></div>
-            <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-d)">ENERGIA &nbsp;<span id="energy-txt">7/10</span></div>
+            <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-d)">HASH <span id="energy-txt">100</span></div>
           </div>
         </div>
 
@@ -559,7 +635,7 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
           <div class="dim-track"><div class="dim-fill" id="dim-fill" style="width:0%"></div></div>
           <div class="dim-txt"><span id="dim-cur">0</span> / 1.500</div>
         </div>
-      </div><!-- fim .center-col -->
+      </div>
 
       <!-- RIGHT -->
       <div class="rpanel">
@@ -585,9 +661,9 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
         </div>
       </div>
 
-    </div><!-- fim .arena-layout -->
+    </div>
   </div>
-</div><!-- fim #s-arena -->
+</div>
 
 <!-- RESULT OVERLAY -->
 <div class="result-ovl" id="result-ovl">
@@ -596,41 +672,48 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
     <div class="r-title" id="r-title">VITÓRIA!</div>
     <div class="r-desc"  id="r-desc">Você combinou 3 cartas iguais!</div>
     <div class="r-combo" id="r-combo"></div>
-    <div class="r-reward"><div class="r-reward-lbl">RECOMPENSA</div><div class="r-reward-val" id="r-reward">+50 Hash</div></div>
+    <div class="r-reward"><div class="r-reward-lbl">RECOMPENSA</div><div class="r-reward-val" id="r-reward">+20 Hash</div></div>
     <button class="btn-result" id="r-btn">CONTINUAR</button>
+  </div>
+</div>
+
+<!-- CRYSTAL BONUS OVERLAY -->
+<div class="crystal-bonus-overlay" id="crystal-bonus-overlay">
+  <div class="crystal-bonus-box">
+    <div class="crystal-emoji">💎</div>
+    <div class="crystal-title">TESOURO CRISTALINO!</div>
+    <div class="crystal-subtitle">VOCÊ FOI SORTEADO!</div>
+    <div class="crystal-rewards">
+      <div class="cr-reward">
+        <div class="cr-val">$20</div>
+        <div class="cr-lbl">CRÉDITO</div>
+      </div>
+      <div class="cr-reward">
+        <div class="cr-val">500</div>
+        <div class="cr-lbl">HASH</div>
+      </div>
+    </div>
+    <div class="cr-message">
+      ✦ Parabéns! Você encontrou o Cristal Diamante!<br>
+      Recompensa bônus creditada na sua conta.
+    </div>
+    <button class="btn-crystal-ok" onclick="closeCrystalBonus()">✦ RECEBER RECOMPENSA</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<!-- ✅ ERRO 4 CORRIGIDO: audio-bar DENTRO do body, antes de 
-<!-- MAGIC BONUS OVERLAY -->
-<div class="magic-bonus-overlay" id="magic-bonus-overlay">
-  <div class="magic-bonus-box">
-    <div style="font-size:52px;margin-bottom:12px">
-      <span class="magic-gem">💎</span>
-    </div>
-    <div class="magic-bonus-title">✦ CARTA DA MAGIA ✦</div>
-    <div style="font-size:13px;color:#9333ea;margin-bottom:18px;font-family:'Cinzel',serif;letter-spacing:1px">
-      A pedra mística apareceu no centro!
-    </div>
-    <div class="magic-bonus-rewards">
-      <div class="mbr">
-        <div class="mbr-val" id="mb-energy">+20</div>
-        <div class="mbr-lbl">ENERGIA</div>
-      </div>
-      <div class="mbr">
-        <div class="mbr-val" id="mb-hash">+20</div>
-        <div class="mbr-lbl">HASH</div>
-      </div>
-    </div>
-    <div style="font-size:12px;color:#6d28d9;font-family:'Cinzel',serif;letter-spacing:1px;margin-bottom:16px">
-      Você foi sorteado pelo universo!
-    </div>
-    <button class="btn-magic-ok" onclick="closeMagicBonus()">
-      ✦ RECEBER BÔNUS
-    </button>
+<div class="audio-bar" id="audio-bar">
+  <button class="btn-mute" id="btn-mute" title="Mute/Unmute">🔊</button>
+  <div class="audio-waves" id="audio-waves">
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
   </div>
+  <div class="audio-label">MÚSICA DA ALMA</div>
+  <input class="vol-slider" id="vol-slider" type="range" min="0" max="100" value="40" title="Volume"/>
 </div>
 
 <!-- WITHDRAW MODAL -->
@@ -651,19 +734,7 @@ canvas#bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
   </div>
 </div>
 
-</body> -->
-<div class="audio-bar" id="audio-bar">
-  <button class="btn-mute" id="btn-mute" title="Mute/Unmute">🔊</button>
-  <div class="audio-waves" id="audio-waves">
-    <div class="wave-bar"></div>
-    <div class="wave-bar"></div>
-    <div class="wave-bar"></div>
-    <div class="wave-bar"></div>
-    <div class="wave-bar"></div>
-  </div>
-  <div class="audio-label">MÚSICA DA ALMA</div>
-  <input class="vol-slider" id="vol-slider" type="range" min="0" max="100" value="40" title="Volume"/>
-</div>
+</body>
 
 <script>
 const API = 'https://soulhash-api.onrender.com';
@@ -675,7 +746,59 @@ const S = {
   sessionToken: null,
   soul:         null,
   spinning:     false,
+  language:     'pt'
 };
+
+// ─── Traduções ────────────────────────────────────────────
+const TEXTS = {
+  pt: {
+    hash: 'HASH', energy: 'HASH', spinCost: '-10 HASH',
+    win: 'VITÓRIA!', lose: 'DERROTA', crystal: 'TESOURO CRISTALINO!',
+    winDesc: 'Você combinou 3 cartas iguais!',
+    loseDesc: 'Nenhuma combinação. Tente novamente!',
+    reward: '+20 Hash', continue: 'CONTINUAR', retry: 'TENTAR NOVAMENTE',
+    noEnergy: 'Hash insuficiente!',
+    withdrawUnavailable: 'Ainda não disponível'
+  },
+  en: {
+    hash: 'HASH', energy: 'HASH', spinCost: '-10 HASH',
+    win: 'VICTORY!', lose: 'DEFEAT', crystal: 'CRYSTAL TREASURE!',
+    winDesc: 'You matched 3 cards!',
+    loseDesc: 'No match. Try again!',
+    reward: '+20 Hash', continue: 'CONTINUE', retry: 'TRY AGAIN',
+    noEnergy: 'Insufficient Hash!',
+    withdrawUnavailable: 'Not available yet'
+  },
+  ja: {
+    hash: 'ハッシュ', energy: 'ハッシュ', spinCost: '-10 ハッシュ',
+    win: '勝利！', lose: '敗北', crystal: 'クリスタルの宝！',
+    winDesc: '3枚のカードが揃いました！',
+    loseDesc: '一致なし。再挑戦！',
+    reward: '+20 ハッシュ', continue: '続ける', retry: '再挑戦',
+    noEnergy: 'ハッシュ不足！',
+    withdrawUnavailable: 'まだ利用不可'
+  },
+  zh: {
+    hash: '哈希', energy: '哈希', spinCost: '-10 哈希',
+    win: '胜利！', lose: '失败', crystal: '水晶宝藏！',
+    winDesc: '你匹配了3张卡牌！',
+    loseDesc: '无匹配。再试一次！',
+    reward: '+20 哈希', continue: '继续', retry: '重试',
+    noEnergy: '哈希不足！',
+    withdrawUnavailable: '暂不可用'
+  },
+  es: {
+    hash: 'HASH', energy: 'HASH', spinCost: '-10 HASH',
+    win: '¡VICTORIA!', lose: 'DERROTA', crystal: '¡TESORO CRISTAL!',
+    winDesc: '¡Combinaste 3 cartas!',
+    loseDesc: 'Sin combinación. ¡Intenta de nuevo!',
+    reward: '+20 Hash', continue: 'CONTINUAR', retry: 'INTENTAR DE NUEVO',
+    noEnergy: '¡Hash insuficiente!',
+    withdrawUnavailable: 'Aún no disponible'
+  }
+};
+
+function t(key){return TEXTS[S.language]?.[key]||TEXTS.pt[key]||key;}
 
 // ─── Canvas BG ────────────────────────────────────────────
 (function(){
@@ -704,20 +827,31 @@ function toBase58(bytes){
   let r='';for(let i=0;i<bytes.length&&bytes[i]===0;i++)r+='1';for(let i=d.length-1;i>=0;i--)r+=A[d[i]];return r;
 }
 
-// ─── Cards — inclui MAGIA ─────────────────────────────────
+// ─── Language Selector ────────────────────────────────────
+function toggleLang(){document.getElementById('lang-dropdown').classList.toggle('open');}
+function setLanguage(lang){
+  S.language=lang;
+  document.querySelectorAll('.lang-item').forEach(i=>i.classList.toggle('active',i.dataset.lang===lang));
+  document.getElementById('current-lang').textContent=lang.toUpperCase();
+  document.getElementById('lang-dropdown').classList.remove('open');
+  updateTexts();
+}
+function updateTexts(){
+  document.getElementById('hash-val').textContent=S.soul?.hash_balance??100;
+  document.querySelector('.spin-lbl').textContent=t('spinCost');
+}
+
+// ─── Cards ────────────────────────────────────────────────
 const CARDS=[
   {id:'luz',    name:'LUZ',        emoji:'☀️', cls:'card-luz'    },
   {id:'sombra', name:'SOMBRA',     emoji:'🌑', cls:'card-sombra' },
   {id:'caos',   name:'CAOS',       emoji:'🔥', cls:'card-caos'   },
   {id:'empatia',name:'EMPATIA',    emoji:'💚', cls:'card-empatia'},
   {id:'equil',  name:'EQUILÍBRIO', emoji:'⚖️', cls:'card-equil'  },
-  // ★ NOVA CARTA: MAGIA — gema rotatória pulsante
-  {id:'magic',  name:'MAGIA',      emoji:'💎', cls:'card-magic', isMagic:true},
+  {id:'crystal',name:'CRISTAL',    emoji:'💎', cls:'card-crystal', isCrystal:true},
 ];
 const CARD_MAP={
-  luz:CARDS[0],sombra:CARDS[1],caos:CARDS[2],empatia:CARDS[3],equil:CARDS[4],
-  magic:CARDS[5],
-  // IDs do servidor
+  luz:CARDS[0],sombra:CARDS[1],caos:CARDS[2],empatia:CARDS[3],equil:CARDS[4],crystal:CARDS[5],
   fire:CARDS[2],water:CARDS[0],earth:CARDS[4],air:CARDS[3],
 };
 const EPIC_CARDS=[
@@ -725,12 +859,12 @@ const EPIC_CARDS=[
   {emoji:'☀️',name:'Luz Divina',    stats:'Cura +50% · Escudo +30% · 4 Turnos'},
   {emoji:'🔥',name:'Caos Infernal', stats:'Área +40% · Crítico +15% · 2 Turnos'},
   {emoji:'💚',name:'Empatia Épica', stats:'Suporte +60% · 5 Turnos'},
-  {emoji:'💎',name:'Magia Ancestral',stats:'Energia +20 · Hash +20 · Bônus Total'},
+  {emoji:'💎',name:'Cristal Diamante',stats:'$20 + 500 Hash · Bônus Total'},
 ];
 const COMBO_LABELS={
   '3linha':'TRÍADE SAGRADA','diagonal':'DIAGONAL COMPLETA',
   'cruz':'ALMA RARA','todos':'TRÍADE DAS SOMBRAS',
-  'magic_line':'✦ MAGIA SAGRADA ✦','none':''
+  'crystal':'✦ CRISTAL DIAMANTE ✦','none':''
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -764,35 +898,32 @@ async function signAndLogin(){
   const btn=document.getElementById('btn-sign');
   btn.disabled=true;btn.textContent='AGUARDE...';setStep(2);
   try {
-    // A: /challenge → { message }
     setStatus('Solicitando desafio...','info');
     const chalRes=await fetch(`${API}/challenge`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:S.wallet})});
     if(!chalRes.ok){const e=await chalRes.json().catch(()=>({}));throw new Error(e.error||`/challenge ${chalRes.status}`);}
     const {message}=await chalRes.json();
     if(!message) throw new Error('Sem mensagem de desafio');
 
-    // B: signMessage
     setStatus('Assine a mensagem na Phantom...','info');
     btn.textContent='ASSINAR NA PHANTOM...';
     const phantom=window.phantom?.solana??window.solana;
-    const sig=await phantom.signMessage(new TextEncoder().encode(message),'utf8');
+    const messageBytes=new TextEncoder().encode(message);
+    const sig=await phantom.signMessage(messageBytes);
     const signature=toBase58(sig.signature);
 
-    // C: /verify → { sessionToken, soulhash, balance, energy, maxEnergy, level, stats }
     setStep(3);setStatus('Verificando...','info');btn.textContent='VERIFICANDO...';
     const verRes=await fetch(`${API}/verify`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet:S.wallet,signature})});
     if(!verRes.ok){const e=await verRes.json().catch(()=>({}));throw new Error(e.error||`/verify ${verRes.status}`);}
     const data=await verRes.json();
     if(!data.soulhash) throw new Error('Servidor não retornou soulhash');
 
-    // Salva estado — backend é fonte de verdade
     S.soulhash     = data.soulhash;
     S.sessionToken = data.sessionToken;
     S.soul={
       soulhash:    data.soulhash,
       wallet:      S.wallet,
       hash_balance:data.balance    ??100,
-      energy:      data.energy     ??10,   // ★ sempre cheia pelo backend
+      energy:      data.energy     ??10,
       maxEnergy:   data.maxEnergy  ??10,
       level:       data.level      ??1,
       stats:       data.stats      ??{xp:0,spins:0,wins:0},
@@ -802,7 +933,7 @@ async function signAndLogin(){
       gems:        0,
     };
     setStatus('✦ Autenticado!','success');
-    toast('✦ Identidade confirmada! Energia máxima.');
+    toast('✦ +100 Hash creditados! Bem-vindo.');
     setTimeout(()=>enterUniverse(),800);
   } catch(e){
     const msg=e.message?.toLowerCase()||'';
@@ -819,17 +950,14 @@ function enterUniverse(){
   setText('bhd-hash',  S.soulhash||'—');
   setText('bhd-wallet',short+' · Autenticado ✓');
   showScreen('s-welcome');
-  toast('✦ +100 Hash creditados! Energia máxima. Bem-vindo.');
+  toast('✦ +100 Hash creditados! Bem-vindo.');
 }
 
 // ─── Arena ────────────────────────────────────────────────
 function enterArenaFn(){
   const soul=S.soul||{};
   setText('tb-hash', soul.soulhash||S.soulhash||'—');
-  setText('tb-lvl',  soul.level||1);
   setText('hash-val',soul.hash_balance??100);
-  setText('gem-val', soul.gems??0);
-  // Menu dropdown — preenche dados
   setText('dm-soulhash-val', soul.soulhash||'—');
   setText('dm-wallet-val',   S.wallet?S.wallet.slice(0,6)+'...'+S.wallet.slice(-4):'—');
   setText('dm-balance-val',  soul.hash_balance??100);
@@ -838,6 +966,7 @@ function enterArenaFn(){
   buildYourCards(soul.ownedCards??{});
   updateDim(soul.dimProgress??0);
   showScreen('s-arena');
+  updateTexts();
 }
 
 // ─── Grid ─────────────────────────────────────────────────
@@ -845,14 +974,8 @@ function makeCardEl(card,i){
   const el=document.createElement('div');
   el.className=`arena-card ${card.cls}`;el.id=`card-${i}`;
   const glow=document.createElement('div');glow.className='card-glow';
-  // ★ Carta MAGIA tem animação especial
   const art=document.createElement('div');art.className='card-art';
-  if(card.isMagic){
-    const gem=document.createElement('span');gem.className='magic-gem';gem.textContent=card.emoji;
-    art.appendChild(gem);
-  } else {
-    art.textContent=card.emoji;
-  }
+  art.textContent=card.emoji;
   const name=document.createElement('div');name.className='card-name';name.textContent=card.name;
   ['tl','tr','bl','br'].forEach(p=>{const c=document.createElement('span');c.className=`card-corner ${p}`;c.textContent='✦';el.appendChild(c);});
   el.appendChild(glow);el.appendChild(art);el.appendChild(name);
@@ -860,7 +983,7 @@ function makeCardEl(card,i){
 }
 function buildGrid(){const g=document.getElementById('card-grid');g.innerHTML='';for(let i=0;i<9;i++)g.appendChild(makeCardEl(CARDS[i%CARDS.length],i));}
 function renderGrid(grid){grid.forEach((id,i)=>{const card=CARD_MAP[id]||CARDS[0];const old=document.getElementById(`card-${i}`);if(old)old.replaceWith(makeCardEl(card,i));});}
-function buildPips(energy,max){const w=document.getElementById('epips');w.innerHTML='';for(let i=0;i<max;i++){const p=document.createElement('div');p.className='epip'+(i<energy?' on':'');p.id=`epip-${i}`;w.appendChild(p);}setText('energy-txt',`${energy}/${max}`);}
+function buildPips(energy,max){const w=document.getElementById('epips');w.innerHTML='';for(let i=0;i<max;i++){const p=document.createElement('div');p.className='epip'+(i<energy?' on':'');p.id=`epip-${i}`;w.appendChild(p);}setText('energy-txt',energy);}
 function buildYourCards(ownedCards){
   const w=document.getElementById('your-cards');w.innerHTML='';
   const owned=Object.entries(ownedCards);
@@ -871,38 +994,30 @@ function updateDim(p){const pct=Math.min(100,p/1500*100);document.getElementById
 function updateHUD(){
   const soul=S.soul;if(!soul)return;
   setText('hash-val',(soul.hash_balance??100).toLocaleString('pt-BR'));
-  setText('gem-val',(soul.gems??0).toLocaleString('pt-BR'));
-  setText('tb-lvl',soul.level??1);
-  setText('energy-txt',`${soul.energy??10}/${soul.maxEnergy??10}`);
-  for(let i=0;i<(soul.maxEnergy??10);i++){const p=document.getElementById(`epip-${i}`);if(p)p.className='epip'+(i<(soul.energy??10)?' on':'');}
-  const xpPct=((soul.stats?.xp??0)%1000)/1000*100;
-  const xpEl=document.getElementById('tb-xpf');if(xpEl)xpEl.style.width=Math.min(100,xpPct)+'%';
-  updateDim(soul.dimProgress??0);
-  buildYourCards(soul.ownedCards??{});
-  // Atualiza menu dropdown
   setText('dm-balance-val', soul.hash_balance??100);
+  setText('energy-txt',soul.hash_balance??100);
+  updateTexts();
 }
 function updateLastGrid(grid){const cells=document.querySelectorAll('#last-grid .lc');grid.forEach((id,i)=>{const c=CARD_MAP[id]||CARDS[0];if(cells[i])cells[i].textContent=c.emoji;});}
 
 // ═══════════════════════════════════════════════════════════
-//  SPIN — POST /spin com x-session-token
+//  SPIN — POST /spin
 // ═══════════════════════════════════════════════════════════
 async function doSpin(){
   if(S.spinning)return;
   const soul=S.soul||{};
-  if((soul.energy??10)<=0){toast('Sem energia da alma!');return;}
+  if((soul.hash_balance??0)<10){toast(t('noEnergy'));return;}
   S.spinning=true;
   document.getElementById('btn-spin').disabled=true;
   sfxSpinStart();
 
   try {
-    let grid,isWin,winPositions=[],combo='none',reward=0,magicCenter=false,energyBonus=0;
+    let grid,isWin,winPositions=[],combo='none',reward=20,isCrystal=false;
 
     if(S.sessionToken){
       const res=await fetch(`${API}/spin`,{
         method:'POST',
         headers:{'Content-Type':'application/json','x-session-token':S.sessionToken},
-        body:JSON.stringify({}),
       });
       if(res.ok){
         const d=await res.json();
@@ -910,24 +1025,21 @@ async function doSpin(){
         isWin        = d.isWin;
         winPositions = d.winPositions??[];
         combo        = d.combo??'none';
-        reward       = d.reward??0;
-        magicCenter  = d.magicCenter??false;
-        energyBonus  = d.energyBonus??0;
-        // ★ balance SEMPRE do servidor
+        reward       = d.reward??20;
+        isCrystal    = d.isCrystal??false;
         if(S.soul && d.balance!==undefined) S.soul.hash_balance=d.balance;
         if(S.soul && d.energy!==undefined)  S.soul.energy=d.energy;
         if(S.soul && d.level!==undefined)   S.soul.level=d.level;
         if(S.soul && d.stats)               S.soul.stats=d.stats;
       } else {
         const r=computeLocalSpin();
-        ({grid,isWin,winPositions,combo,reward}=r);
+        ({grid,isWin,winPositions,combo,reward,isCrystal}=r);
       }
     } else {
       const r=computeLocalSpin();
-      ({grid,isWin,winPositions,combo,reward}=r);
+      ({grid,isWin,winPositions,combo,reward,isCrystal}=r);
     }
 
-    // Atualiza estado local não crítico
     if(S.soul){
       S.soul.dimProgress=(S.soul.dimProgress||0)+25+(isWin?50:0);
       S.soul.phasePassed=isWin||S.soul.phasePassed;
@@ -938,26 +1050,21 @@ async function doSpin(){
     renderGrid(grid);
     await sleep(300);
 
-    // Destaca resultado
     if(isWin){
       winPositions.forEach(i=>{const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-win');});
       grid.forEach((_,i)=>{if(!winPositions.includes(i)){const el=document.getElementById(`card-${i}`);if(el)el.classList.add('card-lose');}});
     }
 
-    // ★ Carta MAGIA no centro — mostra overlay especial
-    if(magicCenter){
-      setText('mb-energy',`+${energyBonus||20}`);
-      setText('mb-hash',  `+${reward}`);
-      await sleep(600);
-      document.getElementById('magic-bonus-overlay').classList.add('on');
-      sfxMagic();
-    }
-
     updateLastGrid(grid);
     updateHUD();
-    if(!magicCenter){
+
+    if(isCrystal){
+      await sleep(600);
+      document.getElementById('crystal-bonus-overlay').classList.add('on');
+      sfxCrystal();
+    } else {
       await sleep(500);
-      showResult({grid,isWin,winPositions,combo,reward});
+      showResult({grid,isWin,winPositions,combo,reward,isCrystal});
     }
 
   } catch(e){
@@ -970,23 +1077,32 @@ async function doSpin(){
   }
 }
 
-function closeMagicBonus(){
-  document.getElementById('magic-bonus-overlay').classList.remove('on');
-  const soul=S.soul||{};
-  const r={isWin:true,grid:Array(9).fill('magic'),winPositions:[4],combo:'magic_line',reward:20};
+function closeCrystalBonus(){
+  document.getElementById('crystal-bonus-overlay').classList.remove('on');
+  const r={isWin:true,grid:Array(9).fill('crystal'),winPositions:[4],combo:'crystal',reward:500};
   showResult(r);
 }
 
 // ─── Spin local fallback ──────────────────────────────────
 function computeLocalSpin(){
-  const isWin=Math.random()<0.30;
+  const rand=Math.random();
+  const isCrystal=rand<0.01; // 1% chance
+  const isWin=isCrystal||(rand<0.31); // 30% win + 1% crystal
   const grid=Array(9).fill(null).map(()=>CARDS[Math.floor(Math.random()*CARDS.length)].id);
-  const winner=CARDS[Math.floor(Math.random()*CARDS.length)].id;
-  if(!isWin){let t=0;while(hasWinLocal(grid)&&t++<50)for(let i=0;i<9;i++)grid[i]=CARDS[Math.floor(Math.random()*CARDS.length)].id;return {isWin:false,grid,combo:'none',winPositions:[],reward:10};}
+  
+  if(isCrystal){
+    const pos=Math.floor(Math.random()*9);
+    grid[pos]='crystal';
+    return {isWin:true,isCrystal:true,grid,combo:'crystal',winPositions:[pos],reward:500};
+  }
+  
+  if(!isWin){let t=0;while(hasWinLocal(grid)&&t++<50)for(let i=0;i<9;i++)grid[i]=CARDS[Math.floor(Math.random()*CARDS.length)].id;return {isWin:false,isCrystal:false,grid,combo:'none',winPositions:[],reward:0};}
+  
+  const winner=CARDS[Math.floor(Math.random()*(CARDS.length-1))].id;
   const roll=Math.random();
-  if(roll<0.50){const row=Math.floor(Math.random()*3);grid[row*3]=grid[row*3+1]=grid[row*3+2]=winner;return {isWin:true,grid,combo:'3linha',winPositions:[row*3,row*3+1,row*3+2],reward:50};}
-  else if(roll<0.75){const d=Math.random()<.5?[0,4,8]:[2,4,6];d.forEach(i=>grid[i]=winner);return {isWin:true,grid,combo:'diagonal',winPositions:d,reward:80};}
-  else{[0,2,4,6,8].forEach(i=>grid[i]=winner);return {isWin:true,grid,combo:'cruz',winPositions:[0,2,4,6,8],reward:120};}
+  if(roll<0.50){const row=Math.floor(Math.random()*3);grid[row*3]=grid[row*3+1]=grid[row*3+2]=winner;return {isWin:true,isCrystal:false,grid,combo:'3linha',winPositions:[row*3,row*3+1,row*3+2],reward:20};}
+  else if(roll<0.75){const d=Math.random()<.5?[0,4,8]:[2,4,6];d.forEach(i=>grid[i]=winner);return {isWin:true,isCrystal:false,grid,combo:'diagonal',winPositions:d,reward:80};}
+  else{[0,2,4,6,8].forEach(i=>grid[i]=winner);return {isWin:true,isCrystal:false,grid,combo:'cruz',winPositions:[0,2,4,6,8],reward:120};}
 }
 function hasWinLocal(g){return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(([a,b,c])=>g[a]&&g[a]===g[b]&&g[b]===g[c]);}
 
@@ -1006,24 +1122,34 @@ async function animateSpin(finalGrid){
 
 function showResult(result){
   const ovl=document.getElementById('result-ovl'),box=document.getElementById('result-box'),isWin=result.isWin;
-  box.className='result-box '+(isWin?'rbox-win':'rbox-lose');
-  if(isWin)sfxWin();else sfxLose();
-  setText('r-emoji',isWin?'🏆':'💀');
-  setText('r-title',isWin?'VITÓRIA!':'DERROTA');
-  setText('r-desc', isWin?'Você combinou 3 cartas!':'Nenhuma combinação. Tente novamente!');
-  setText('r-combo',COMBO_LABELS[result.combo]||'');
-  setText('r-reward',isWin?`+${result.reward} Hash`:`+${result.reward??10} XP`);
-  if(isWin){
-    const isMagic=result.combo==='magic_line';
-    const epic=isMagic?EPIC_CARDS[4]:EPIC_CARDS[Math.floor(Math.random()*4)];
-    const rb=document.getElementById('reward-box');rb.innerHTML='';
-    [['rwd-emoji','span',epic.emoji],['rwd-name','div',epic.name],['rwd-stat','div',epic.stats]].forEach(([cls,tag,txt])=>{const el=document.createElement(tag);el.className=cls;el.textContent=txt;rb.appendChild(el);});
-    const cb=document.getElementById('combo-bonus');cb.innerHTML='';
-    const n=document.createElement('div');n.style.cssText='font-family:Cinzel,serif;font-size:13px;color:var(--sombra);letter-spacing:1px;margin-bottom:5px';n.textContent=COMBO_LABELS[result.combo]||'';
-    const d=document.createElement('div');d.style.cssText='font-size:12px;color:var(--text-d)';d.textContent=`+${result.reward} Hash`;
-    cb.appendChild(n);cb.appendChild(d);
+  
+  if(result.isCrystal){
+    box.className='result-box rbox-crystal';
+    sfxCrystal();
+    setText('r-emoji','💎');
+    setText('r-title',t('crystal'));
+    setText('r-desc','Você encontrou o Cristal Diamante!');
+    setText('r-combo',COMBO_LABELS.crystal);
+    setText('r-reward',`+500 Hash + $20`);
+  } else if(isWin){
+    box.className='result-box rbox-win';
+    sfxWin();
+    setText('r-emoji','🏆');
+    setText('r-title',t('win'));
+    setText('r-desc',t('winDesc'));
+    setText('r-combo',COMBO_LABELS[result.combo]||'');
+    setText('r-reward',`+${result.reward} Hash`);
+  } else {
+    box.className='result-box rbox-lose';
+    sfxLose();
+    setText('r-emoji','💀');
+    setText('r-title',t('lose'));
+    setText('r-desc',t('loseDesc'));
+    setText('r-combo','');
+    setText('r-reward',`+10 XP`);
   }
-  setText('r-btn',(S.soul?.phasePassed&&isWin)?'✦ AVANÇAR NO UNIVERSO':isWin?'CONTINUAR':'TENTAR NOVAMENTE');
+  
+  setText('r-btn',isWin?t('continue'):t('retry'));
   ovl.className='result-ovl on';
 }
 function closeResult(){
@@ -1037,17 +1163,17 @@ function closeResult(){
 function toggleMenu(){
   const m=document.getElementById('dropdown-menu');
   m.classList.toggle('open');
-  // Atualiza dados ao abrir
   if(m.classList.contains('open')&&S.soul){
     setText('dm-soulhash-val',S.soul.soulhash||'—');
     setText('dm-wallet-val',  S.wallet?S.wallet.slice(0,6)+'...'+S.wallet.slice(-4):'—');
     setText('dm-balance-val', S.soul.hash_balance??0);
   }
 }
-// Fecha menu ao clicar fora
 document.addEventListener('click',e=>{
   const wrap=document.getElementById('dropdown-menu')?.closest('.menu-wrap');
   if(wrap&&!wrap.contains(e.target)) document.getElementById('dropdown-menu')?.classList.remove('open');
+  const langWrap=document.getElementById('lang-dropdown')?.closest('.lang-selector');
+  if(langWrap&&!langWrap.contains(e.target)) document.getElementById('lang-dropdown')?.classList.remove('open');
 });
 
 function menuToggleSound(){
@@ -1071,61 +1197,14 @@ function menuLogout(){
 }
 
 // ═══════════════════════════════════════════════════════════
-//  SAQUE — POST /reward
+//  SAQUE
 // ═══════════════════════════════════════════════════════════
 function openWithdraw(){
   document.getElementById('dropdown-menu').classList.remove('open');
-  if(!S.sessionToken){toast('Faça login primeiro');return;}
-  const bal=S.soul?.hash_balance??0;
-  setText('wd-balance-show',bal);
-  document.getElementById('wd-amount').value='';
-  document.getElementById('wd-feedback').style.display='none';
-  document.getElementById('wd-feedback').textContent='';
-  document.getElementById('btn-wd-confirm').disabled=false;
-  document.getElementById('withdraw-modal').classList.add('on');
+  toast(t('withdrawUnavailable'));
 }
 function closeWithdraw(){document.getElementById('withdraw-modal').classList.remove('on');}
-
-async function confirmWithdraw(){
-  const amount=Number(document.getElementById('wd-amount').value);
-  const bal   =S.soul?.hash_balance??0;
-  const fb    =document.getElementById('wd-feedback');
-  const btn   =document.getElementById('btn-wd-confirm');
-
-  // Validações no frontend (saldo é confirmado no servidor)
-  if(!amount||amount<20){showWdFeedback('Valor mínimo é 20 Hash.','error');return;}
-  if(amount>bal){showWdFeedback(`Saldo insuficiente. Disponível: ${bal} Hash.`,'error');return;}
-
-  btn.disabled=true;btn.textContent='ENVIANDO...';
-
-  try {
-    const res=await fetch(`${API}/reward`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-session-token':S.sessionToken},
-      body:JSON.stringify({soulhash:S.soulhash,amount}),
-    });
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error||`HTTP ${res.status}`);
-
-    // ★ balance do servidor — fonte de verdade
-    if(S.soul&&data.remainingBalance!==undefined) S.soul.hash_balance=data.remainingBalance;
-    updateHUD();
-
-    sfxWin();
-    showWdFeedback(`✦ ${amount} Hash enviados para sua wallet! Tx: ${data.txSimulated}`,'success');
-    toast(`✦ Saque de ${amount} Hash realizado!`);
-    setTimeout(()=>closeWithdraw(),3000);
-
-  } catch(e){
-    showWdFeedback('Erro: '+sanitize(e.message),'error');
-    btn.disabled=false;btn.textContent='SACAR';
-  }
-}
-
-function showWdFeedback(msg,type){
-  const fb=document.getElementById('wd-feedback');
-  fb.textContent=msg;fb.className=`wd-feedback ${type}`;fb.style.display='block';
-}
+async function confirmWithdraw(){toast(t('withdrawUnavailable'));closeWithdraw();}
 
 // ─── Init ─────────────────────────────────────────────────
 window.addEventListener('load',async()=>{
@@ -1178,20 +1257,7 @@ function sfxWin(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.
 function sfxLose(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[220,196,174.61,164.81].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),filt=ctx.createBiquadFilter(),st=t+i*0.18;osc.type='sawtooth';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.18,st+0.05);gain.gain.exponentialRampToValueAtTime(0.001,st+0.7);filt.type='lowpass';filt.frequency.value=800;osc.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+0.8);});const noise=ctx.createBuffer(1,ctx.sampleRate*0.6,ctx.sampleRate);const nd=noise.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*(1-i/nd.length);const src=ctx.createBufferSource(),filt=ctx.createBiquadFilter(),gain=ctx.createGain();src.buffer=noise;filt.type='lowpass';filt.frequency.value=80;gain.gain.setValueAtTime(0.3,t+0.5);gain.gain.linearRampToValueAtTime(0,t+1.2);src.connect(filt);filt.connect(gain);gain.connect(AUDIO.masterGain);src.start(t+0.5);}
 function sfxConnect(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[523.25,783.99].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),st=t+i*0.15;osc.type='sine';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.2,st+0.04);gain.gain.exponentialRampToValueAtTime(0.001,st+1.2);osc.connect(gain);gain.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+1.3);});}
 function sfxButton(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(660,t);osc.frequency.linearRampToValueAtTime(880,t+0.06);gain.gain.setValueAtTime(0.12,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.12);osc.connect(gain);gain.connect(AUDIO.masterGain);osc.start(t);osc.stop(t+0.14);}
-
-// ★ Som especial para carta MAGIA
-function sfxMagic(){
-  if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();
-  const ctx=AUDIO.ctx,t=ctx.currentTime;
-  // Arpejo mágico ascendente em púrpura
-  [261.63,329.63,392,523.25,659.25,784,1046.5].forEach((freq,i)=>{
-    const osc=ctx.createOscillator(),gain=ctx.createGain(),rev=createReverb(ctx,3),st=t+i*0.12;
-    osc.type='sine';osc.frequency.setValueAtTime(freq,st);
-    gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.2,st+0.05);gain.gain.exponentialRampToValueAtTime(0.001,st+1.2);
-    osc.connect(gain);gain.connect(rev);rev.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+1.5);
-  });
-}
-
+function sfxCrystal(){if(!AUDIO.ctx||AUDIO.muted)return;resumeCtx();const ctx=AUDIO.ctx,t=ctx.currentTime;[523.25,659.25,783.99,1046.5,1318.51,1567.98,2093.00].forEach((freq,i)=>{const osc=ctx.createOscillator(),gain=ctx.createGain(),rev=createReverb(ctx,3),st=t+i*0.08;osc.type='sine';osc.frequency.setValueAtTime(freq,st);gain.gain.setValueAtTime(0,st);gain.gain.linearRampToValueAtTime(0.3,st+0.05);gain.gain.exponentialRampToValueAtTime(0.001,st+1.5);osc.connect(gain);gain.connect(rev);rev.connect(AUDIO.masterGain);osc.start(st);osc.stop(st+1.8);});}
 function toggleMute(){AUDIO.muted=!AUDIO.muted;if(AUDIO.masterGain)AUDIO.masterGain.gain.setTargetAtTime(AUDIO.muted?0:AUDIO.volume,AUDIO.ctx.currentTime,0.1);const btn=document.getElementById('btn-mute');if(btn)btn.textContent=AUDIO.muted?'🔇':'🔊';updateWaves(!AUDIO.muted);}
 function setVolume(val){AUDIO.volume=val/100;if(AUDIO.masterGain&&!AUDIO.muted)AUDIO.masterGain.gain.setTargetAtTime(AUDIO.volume,AUDIO.ctx.currentTime,0.05);}
 function updateWaves(playing){document.querySelectorAll('.wave-bar').forEach(b=>{b.className='wave-bar'+(playing?'':' paused');});}
@@ -1202,4 +1268,4 @@ document.getElementById('btn-mute').addEventListener('click',e=>{e.stopPropagati
 document.getElementById('vol-slider').addEventListener('input',e=>{e.stopPropagation();setVolume(Number(e.target.value));});
 </script>
 </body>
-</html>
+  </html>
